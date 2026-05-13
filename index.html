@@ -1,411 +1,1885 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>ARIS | Academic Risk Intelligence System</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      /* Student-Friendly Blue Palette */
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --secondary: #3b82f6;
-      --bg-main: #f8fafc;
-      --sidebar-bg: #ffffff;
-      --sidebar-text: #64748b;
-      --card-bg: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      
-      /* Status Colors */
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --accent-soft: #dbeafe;
-      
-      /* Styling Constants */
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-      --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1);
-      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduManage Pro - School Management System</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --card-bg: #ffffff;
+            --sidebar-bg: #0f172a;
+            --gradient-1: linear-gradient(135deg, #4f46e5, #7c3aed);
+            --gradient-2: linear-gradient(135deg, #06b6d4, #3b82f6);
+            --gradient-3: linear-gradient(135deg, #f59e0b, #ef4444);
+            --gradient-4: linear-gradient(135deg, #10b981, #06b6d4);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.2);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg-main);
-      color: var(--text-main);
-      line-height: 1.6;
-    }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f1f5f9;
+            color: var(--dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: var(--transition);
+        }
 
-    .app-wrapper { display: flex; min-height: 100vh; }
+        /* ===== LOGIN PAGE ===== */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #1a1a2e 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .login-container::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            opacity: 0.3;
+            top: -150px;
+            right: -100px;
+            animation: floatBubble 8s ease-in-out infinite;
+        }
+        .login-container::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: var(--gradient-2);
+            opacity: 0.25;
+            bottom: -120px;
+            left: -80px;
+            animation: floatBubble 10s ease-in-out infinite reverse;
+        }
+        @keyframes floatBubble {
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+            33% {
+                transform: translate(30px, -30px) scale(1.1);
+            }
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-lg);
+            padding: 3rem 2.5rem;
+            width: 440px;
+            max-width: 95vw;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .login-card .logo {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .login-card .logo .icon {
+            font-size: 3rem;
+            display: block;
+            animation: bounce 1.5s ease-in-out infinite;
+        }
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+        .login-card h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.3rem;
+        }
+        .login-card .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: #f8fafc;
+            color: var(--dark);
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            background: #fff;
+        }
+        .btn {
+            padding: 0.85rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            letter-spacing: 0.3px;
+        }
+        .btn-primary {
+            background: var(--gradient-1);
+            color: #fff;
+            width: 100%;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+        }
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+        .btn-success {
+            background: var(--gradient-4);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        .btn-warning {
+            background: var(--gradient-3);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: #fff;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            cursor: pointer;
+        }
 
-    /* ========== SIDEBAR UPGRADE ========== */
-    .sidebar {
-      width: 260px;
-      background: var(--sidebar-bg);
-      border-right: 1px solid #e2e8f0;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      z-index: 100;
-    }
+        /* ===== MAIN LAYOUT ===== */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+        .app-container.active {
+            display: flex;
+        }
+        .login-container.hidden {
+            display: none;
+        }
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: #fff;
+            min-height: 100vh;
+            padding: 1.5rem 1rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-lg);
+            transition: var(--transition);
+        }
+        .sidebar .brand {
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 0.5rem 0 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+        .sidebar .brand span {
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .sidebar-nav {
+            list-style: none;
+            flex: 1;
+        }
+        .sidebar-nav li {
+            margin-bottom: 4px;
+        }
+        .sidebar-nav li a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .sidebar-nav li a:hover,
+        .sidebar-nav li a.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateX(5px);
+        }
+        .sidebar-nav li a .nav-icon {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+        .sidebar-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            padding-top: 1rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .sidebar-footer .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.8rem;
+        }
+        .sidebar-footer .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--gradient-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            padding: 1.5rem 2rem;
+            transition: var(--transition);
+            min-height: 100vh;
+        }
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            margin-bottom: 1.8rem;
+        }
+        .page-header h2 {
+            font-size: 1.6rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .page-header p {
+            color: #64748b;
+            margin-top: 0.3rem;
+        }
 
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 0.5rem 0.5rem 2rem;
-    }
+        /* ===== CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border-left: 5px solid transparent;
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+        .stat-card.purple {
+            border-left-color: #8b5cf6;
+        }
+        .stat-card.blue {
+            border-left-color: #3b82f6;
+        }
+        .stat-card.green {
+            border-left-color: #10b981;
+        }
+        .stat-card.orange {
+            border-left-color: #f59e0b;
+        }
+        .stat-card .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        .stat-card .stat-label {
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-top: 0.3rem;
+        }
+        .stat-card .stat-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            opacity: 0.15;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+            transition: var(--transition);
+        }
+        .card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
-    .logo-icon {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 1.2rem;
-    }
+        /* ===== TABLE ===== */
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        table th,
+        table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        table th {
+            background: #f8fafc;
+            font-weight: 700;
+            color: #475569;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+        table tbody tr {
+            transition: var(--transition);
+        }
+        table tbody tr:hover {
+            background: #f1f5f9;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-purple {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
 
-    .logo-text { font-weight: 800; font-size: 1.4rem; color: var(--primary); letter-spacing: -0.5px; }
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(3px);
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #fff;
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            width: 500px;
+            max-width: 95vw;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease-out;
+        }
+        .modal h3 {
+            margin-bottom: 1.2rem;
+            font-size: 1.3rem;
+        }
+        .modal .close-btn {
+            float: right;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            transition: var(--transition);
+        }
+        .modal .close-btn:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+        .modal .form-group {
+            margin-bottom: 1rem;
+        }
 
-    .nav-menu { flex: 1; margin-top: 1rem; }
+        /* ===== TOPIC TAGS ===== */
+        .topic-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .topic-tag {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .topic-tag.selected {
+            border-color: var(--danger);
+            background: #fee2e2;
+            color: #991b1b;
+            animation: pulse 0.6s ease-in-out;
+        }
+        .topic-tag.understood {
+            border-color: var(--success);
+            background: #d1fae5;
+            color: #065f46;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.08);
+            }
+        }
 
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      border-radius: var(--radius-md);
-      color: var(--sidebar-text);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.95rem;
-      margin-bottom: 4px;
-      cursor: pointer;
-      transition: var(--transition);
-    }
+        /* ===== NOTIFICATION TOAST ===== */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 999;
+            background: #fff;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            animation: slideInRight 0.4s ease-out;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            max-width: 400px;
+        }
+        @keyframes slideInRight {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+        .toast.info {
+            border-left: 4px solid #3b82f6;
+        }
 
-    .nav-item i { font-size: 1.1rem; }
+        /* ===== CONSULTATION CARDS ===== */
+        .consultation-card {
+            background: #fff;
+            border-radius: var(--radius-md);
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--primary);
+            transition: var(--transition);
+        }
+        .consultation-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .consultation-card.pending {
+            border-left-color: var(--warning);
+        }
+        .consultation-card.approved {
+            border-left-color: var(--success);
+        }
 
-    .nav-item:hover {
-      background: var(--bg-main);
-      color: var(--primary);
-    }
+        /* ===== PROGRESS BAR ===== */
+        .progress-bar-wrap {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.6s ease-out;
+            background: var(--gradient-4);
+        }
 
-    .nav-item.active {
-      background: var(--accent-soft);
-      color: var(--primary);
-    }
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+                padding: 1rem 0.3rem;
+            }
+            .sidebar .brand {
+                font-size: 0.8rem;
+            }
+            .sidebar-nav li a span:not(.nav-icon) {
+                display: none;
+            }
+            .sidebar-nav li a {
+                justify-content: center;
+                padding: 0.7rem;
+            }
+            .sidebar-footer .user-info span {
+                display: none;
+            }
+            .main-content {
+                margin-left: 60px;
+                padding: 1rem;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            .modal {
+                width: 95vw;
+                padding: 1.2rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 45px;
+            }
+            .main-content {
+                margin-left: 45px;
+                padding: 0.7rem;
+            }
+            .stat-card .stat-value {
+                font-size: 1.5rem;
+            }
+            .login-card {
+                padding: 2rem 1.2rem;
+            }
+        }
 
-    /* ========== MAIN CONTENT UPGRADE ========== */
-    .main-content { flex: 1; padding: 2.5rem; max-width: 1200px; margin: 0 auto; }
-
-    .top-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2.5rem;
-    }
-
-    .page-title h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; }
-    .page-title p { color: var(--text-muted); font-size: 0.95rem; }
-
-    /* ========== CARDS & DATA TABLES ========== */
-    .card {
-      background: var(--card-bg);
-      border-radius: var(--radius-lg);
-      padding: 1.75rem;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid #e2e8f0;
-      margin-bottom: 2rem;
-      transition: var(--transition);
-    }
-
-    .card:hover { box-shadow: var(--shadow-md); }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .card-header h3 { font-size: 1.2rem; font-weight: 700; }
-
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 12px 16px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; }
-    td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
-
-    /* ========== BUTTONS & INPUTS ========== */
-    .btn {
-      padding: 10px 20px;
-      border-radius: var(--radius-md);
-      font-weight: 700;
-      cursor: pointer;
-      border: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
-      transition: var(--transition);
-    }
-
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-
-    .btn-ghost { background: transparent; color: var(--text-muted); }
-    .btn-ghost:hover { background: var(--bg-main); color: var(--primary); }
-
-    .input-pill {
-      background: var(--bg-main);
-      border: 1px solid #e2e8f0;
-      padding: 8px 12px;
-      border-radius: 8px;
-      width: 80px;
-      text-align: center;
-      font-weight: 600;
-      color: var(--primary);
-    }
-
-    /* ========== PROGRESS BARS ========== */
-    .progress-bar {
-      height: 10px;
-      background: #f1f5f9;
-      border-radius: 10px;
-      overflow: hidden;
-      margin: 10px 0;
-    }
-    .progress-fill { height: 100%; background: var(--primary); transition: width 0.5s ease; }
-
-    /* ========== STATUS BADGES ========== */
-    .badge {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-    .badge-blue { background: var(--accent-soft); color: var(--primary); }
-    .badge-red { background: #fee2e2; color: var(--danger); }
-
-    /* ========== MARK ENTRY GRID COLORS ========== */
-    .cell-pass { background-color: #ecfdf5 !important; color: #065f46; border-radius: 6px; }
-    .cell-risk { background-color: #fff7ed !important; color: #9a3412; border-radius: 6px; }
-    .cell-fail { background-color: #fef2f2 !important; color: #991b1b; border-radius: 6px; }
-
-    /* Animations */
-    .fade-in { animation: fadeIn 0.3s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    @media (max-width: 1024px) {
-      .sidebar { width: 80px; padding: 1rem; }
-      .logo-text, .nav-item span { display: none; }
-    }
-  </style>
+        .highlight-row {
+            animation: highlightAnim 2s ease-out;
+        }
+        @keyframes highlightAnim {
+            0% {
+                background: #fef3c7;
+            }
+            100% {
+                background: transparent;
+            }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+        .empty-state .icon {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
 <body>
 
-<div class="app-wrapper">
-  <aside class="sidebar">
-    <div class="logo-area">
-      <div class="logo-icon"><i class="fas fa-bolt"></i></div>
-      <span class="logo-text">ARIS</span>
-    </div>
-    
-    <nav class="nav-menu">
-      <div class="nav-item active" onclick="switchTab('subjects', this)"><i class="fas fa-book"></i><span>Subjects</span></div>
-      <div class="nav-item" onclick="switchTab('assessments', this)"><i class="fas fa-layer-group"></i><span>Assessments</span></div>
-      <div class="nav-item" onclick="switchTab('questions', this)"><i class="fas fa-pen-ruler"></i><span>Question Builder</span></div>
-      <div class="nav-item" onclick="switchTab('marks', this)"><i class="fas fa-check-double"></i><span>Mark Entry</span></div>
-      <div class="nav-item" onclick="switchTab('risk', this)"><i class="fas fa-shield-heart"></i><span>Intervention</span></div>
-    </nav>
-    
-    <div class="nav-item" style="margin-top: auto; color: var(--text-muted); font-size: 0.8rem;">
-      <i class="fas fa-user-circle"></i><span>Admin Portal</span>
-    </div>
-  </aside>
-
-  <main class="main-content">
-    <header class="top-header">
-      <div class="page-title">
-        <h1 id="viewTitle">Subject Management</h1>
-        <p id="viewSubtitle">Overview of your school's academic structure</p>
-      </div>
-      <div class="btn btn-ghost" style="border: 1px solid #e2e8f0;">
-        <i class="fas fa-calendar"></i> 2026 Academic Year
-      </div>
-    </header>
-
-    <div id="subjectsSection" class="tab-content fade-in">
-      <div class="card">
-        <div class="card-header">
-          <h3>Active Subjects</h3>
-          <button class="btn btn-primary" onclick="addSubject()"><i class="fas fa-plus"></i> Create Subject</button>
-        </div>
-        <table>
-          <thead>
-            <tr><th>Name</th><th>Assessments</th><th>Risk Level</th><th>Actions</th></tr>
-          </thead>
-          <tbody id="subjectList">
-            </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="marksSection" class="tab-content fade-in" style="display: none;">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h3>Test 1: Mathematics</h3>
-            <p style="font-size: 0.8rem; color: var(--text-muted);">Capturing marks per-question for diagnostic tracking</p>
-          </div>
-          <button class="btn btn-primary" onclick="saveAllMarks()"><i class="fas fa-save"></i> Save Batch</button>
-        </div>
-        <div style="overflow-x: auto;">
-          <table id="markEntryTable">
-            </table>
-        </div>
-      </div>
-    </div>
-
-    <div id="riskSection" class="tab-content fade-in" style="display: none;">
-      <div class="card" style="background: linear-gradient(to right, #ffffff, #f0f7ff);">
-        <h3><i class="fas fa-robot" style="color: var(--primary);"></i> AI Intervention Recommendations</h3>
-        <p>Based on per-question data, these students need immediate support in specific topics.</p>
-        <div id="riskList" style="margin-top: 1.5rem;">
-          </div>
-      </div>
-    </div>
-
-  </main>
-</div>
-
-<script>
-  // Mock Data
-  let subjects = [
-    { name: 'Mathematics', assessments: 2, risk: 'Low' },
-    { name: 'Information Systems', assessments: 3, risk: 'Moderate' }
-  ];
-
-  const students = [
-    { id: 1, name: "Thabo Nkosi" },
-    { id: 2, name: "Sarah Pillay" },
-    { id: 3, name: "Given Mabhena" }
-  ];
-
-  const questions = [
-    { id: 'q1', label: 'Q1 (Algebra)', max: 10 },
-    { id: 'q2', label: 'Q2 (Geometry)', max: 15 },
-    { id: 'q3', label: 'Q3 (Logic)', max: 5 }
-  ];
-
-  // Logic to switch between tabs
-  function switchTab(view, el) {
-    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    
-    el.classList.add('active');
-    
-    if(view === 'subjects') {
-      document.getElementById('subjectsSection').style.display = 'block';
-      document.getElementById('viewTitle').innerText = "Subject Management";
-      renderSubjects();
-    } else if(view === 'marks') {
-      document.getElementById('marksSection').style.display = 'block';
-      document.getElementById('viewTitle').innerText = "Per-Question Mark Entry";
-      renderMarkEntry();
-    } else if(view === 'risk') {
-      document.getElementById('riskSection').style.display = 'block';
-      document.getElementById('viewTitle').innerText = "Risk & Intervention";
-      renderRisk();
-    }
-  }
-
-  function renderSubjects() {
-    const list = document.getElementById('subjectList');
-    list.innerHTML = subjects.map(s => `
-      <tr>
-        <td><strong>${s.name}</strong></td>
-        <td><span class="badge badge-blue">${s.assessments} Assessments</span></td>
-        <td><span class="badge ${s.risk === 'Low' ? 'badge-blue' : 'badge-red'}">${s.risk}</span></td>
-        <td><button class="btn btn-ghost"><i class="fas fa-ellipsis-v"></i></button></td>
-      </tr>
-    `).join('');
-  }
-
-  function renderMarkEntry() {
-    const table = document.getElementById('markEntryTable');
-    
-    // Header
-    let html = `<thead><tr><th>Student Name</th>`;
-    questions.forEach(q => { html += `<th>${q.label}<br><span style="font-size:0.7rem">Max: ${q.max}</span></th>`; });
-    html += `<th>Total</th></tr></thead><tbody>`;
-    
-    // Rows
-    students.forEach(s => {
-      html += `<tr><td><strong>${s.name}</strong></td>`;
-      questions.forEach(q => {
-        html += `<td><input type="number" class="input-pill" placeholder="0" onchange="validateMark(this, ${q.max})"></td>`;
-      });
-      html += `<td id="total-${s.id}">0</td></tr>`;
-    });
-    
-    html += `</tbody>`;
-    table.innerHTML = html;
-  }
-
-  function validateMark(input, max) {
-    const val = parseInt(input.value);
-    input.classList.remove('cell-pass', 'cell-risk', 'cell-fail');
-    
-    if (val > max) {
-        input.value = max;
-        alert("Mark cannot exceed maximum!");
-    }
-
-    const percent = (val / max) * 100;
-    if (percent >= 75) input.classList.add('cell-pass');
-    else if (percent >= 50) input.classList.add('cell-risk');
-    else if (percent < 50) input.classList.add('cell-fail');
-  }
-
-  function renderRisk() {
-    const riskList = document.getElementById('riskList');
-    riskList.innerHTML = `
-      <div class="card" style="border-left: 5px solid var(--danger);">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <strong>Thabo Nkosi</strong> <span class="badge badge-red">Critical Risk</span>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">
-              Consistent failure in <strong>Algebra</strong> questions (Avg: 22%) across 3 assessments.
+    <!-- ==================== LOGIN CONTAINER ==================== -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-card">
+            <div class="logo">
+                <span class="icon">🎓</span>
+            </div>
+            <h1>EduManage Pro</h1>
+            <p class="subtitle">Smart School Management System</p>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>📧 Email</label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label>🔐 Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password" required>
+                </div>
+                <div class="form-group">
+                    <label>👤 Role</label>
+                    <select id="loginRole" required>
+                        <option value="">Select Role</option>
+                        <option value="admin">Administrator</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="learner">Learner</option>
+                        <option value="parent">Parent / Guardian</option>
+                        <option value="hod">Head of Department</option>
+                        <option value="librarian">Librarian</option>
+                        <option value="clerk">Finance Clerk</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">🚀 Sign In</button>
+            </form>
+            <p style="text-align:center;margin-top:1.2rem;font-size:0.8rem;color:#94a3b8;">
+                Demo: Use any email/password — select a role to explore
             </p>
-          </div>
-          <button class="btn btn-primary" style="background:var(--text-main)">Create Intervention</button>
         </div>
-      </div>
-    `;
-  }
+    </div>
 
-  function saveAllMarks() {
-    alert("Data encrypted and pushed to ARIS Secure Ledger.");
-  }
+    <!-- ==================== APP CONTAINER ==================== -->
+    <div class="app-container" id="appContainer">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">📚 <span>EduManage</span></div>
+            <ul class="sidebar-nav" id="sidebarNav">
+                <!-- Dynamically filled -->
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="avatar" id="sidebarAvatar">U</div>
+                    <span id="sidebarUserName">User</span>
+                </div>
+                <button class="btn btn-sm btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.4);width:100%;" onclick="logout()">🚪 Logout</button>
+            </div>
+        </aside>
 
-  // Init
-  renderSubjects();
-</script>
+        <!-- MAIN CONTENT -->
+        <main class="main-content" id="mainContent">
+            <!-- Pages injected dynamically -->
+        </main>
+    </div>
 
+    <!-- ==================== MODAL OVERLAY ==================== -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modalContent">
+            <!-- Dynamically filled -->
+        </div>
+    </div>
+
+    <!-- ==================== TOAST CONTAINER ==================== -->
+    <div id="toastContainer"></div>
+
+    <script>
+        // ==================== DATA STORE (localStorage) ====================
+        const DEFAULT_DATA = {
+            users: [
+                { id: 'u1', name: 'Admin Master', email: 'admin@school.com', password: 'admin123', role: 'admin',
+                    avatar: 'A' },
+                { id: 'u2', name: 'Sarah Johnson', email: 'teacher@school.com', password: 'teacher123', role: 'teacher',
+                    subject: 'Mathematics', avatar: 'S' },
+                { id: 'u3', name: 'Mike Peters', email: 'teacher2@school.com', password: 'teacher123', role: 'teacher',
+                    subject: 'English', avatar: 'M' },
+                { id: 'u4', name: 'Emily Davis', email: 'learner@school.com', password: 'learner123', role: 'learner',
+                    grade: 'Grade 11', avatar: 'E' },
+                { id: 'u5', name: 'James Brown', email: 'learner2@school.com', password: 'learner123', role: 'learner',
+                    grade: 'Grade 10', avatar: 'J' },
+                { id: 'u6', name: 'Robert Davis', email: 'parent@school.com', password: 'parent123', role: 'parent',
+                    linkedLearner: 'u4', avatar: 'R' },
+                { id: 'u7', name: 'Dr. Williams', email: 'hod@school.com', password: 'hod123', role: 'hod',
+                    department: 'Science', avatar: 'W' },
+                { id: 'u8', name: 'Linda Smith', email: 'librarian@school.com', password: 'lib123', role: 'librarian',
+                    avatar: 'L' },
+                { id: 'u9', name: 'Kevin Hart', email: 'clerk@school.com', password: 'clerk123', role: 'clerk',
+                    avatar: 'K' },
+            ],
+            marks: [
+                { id: 'm1', learnerId: 'u4', subject: 'Mathematics', score: 85, total: 100, topic: 'Algebra',
+                    date: '2026-03-15', teacherId: 'u2' },
+                { id: 'm2', learnerId: 'u4', subject: 'Mathematics', score: 62, total: 100, topic: 'Trigonometry',
+                    date: '2026-04-02', teacherId: 'u2' },
+                { id: 'm3', learnerId: 'u4', subject: 'English', score: 78, total: 100, topic: 'Essay Writing',
+                    date: '2026-03-20', teacherId: 'u3' },
+                { id: 'm4', learnerId: 'u5', subject: 'Mathematics', score: 45, total: 100, topic: 'Calculus',
+                    date: '2026-04-10', teacherId: 'u2' },
+                { id: 'm5', learnerId: 'u5', subject: 'English', score: 91, total: 100, topic: 'Poetry Analysis',
+                    date: '2026-04-05', teacherId: 'u3' },
+                { id: 'm6', learnerId: 'u4', subject: 'Mathematics', score: 55, total: 100, topic: 'Geometry',
+                    date: '2026-04-18', teacherId: 'u2' },
+            ],
+            consultations: [
+                { id: 'c1', learnerId: 'u4', teacherId: 'u2', topic: 'Trigonometry', status: 'pending',
+                    message: 'Need help with sine/cosine rules', date: '2026-04-20', timeSlot: '10:00 AM' },
+                { id: 'c2', learnerId: 'u5', teacherId: 'u2', topic: 'Calculus', status: 'approved',
+                    message: 'Struggling with derivatives', date: '2026-04-22', timeSlot: '2:00 PM' },
+            ],
+            difficultTopics: [
+                { learnerId: 'u4', subject: 'Mathematics', topic: 'Trigonometry', flaggedDate: '2026-04-03' },
+                { learnerId: 'u4', subject: 'Mathematics', topic: 'Geometry', flaggedDate: '2026-04-19' },
+                { learnerId: 'u5', subject: 'Mathematics', topic: 'Calculus', flaggedDate: '2026-04-11' },
+            ],
+            announcements: [
+                { id: 'a1', text: 'Mid-term exams start next week!', date: '2026-04-15', author: 'Admin' },
+                { id: 'a2', text: 'Parent-teacher meeting on Friday', date: '2026-04-18', author: 'Admin' },
+            ],
+            libraryBooks: [
+                { id: 'b1', title: 'Advanced Algebra', author: 'Dr. Smith', available: true, borrowedBy: null },
+                { id: 'b2', title: 'English Literature Guide', author: 'J. Doe', available: false, borrowedBy: 'u4' },
+            ],
+            financeRecords: [
+                { id: 'f1', learnerId: 'u4', description: 'Term 1 Fees', amount: 2500, paid: true, date: '2026-01-15' },
+                { id: 'f2', learnerId: 'u5', description: 'Term 1 Fees', amount: 2500, paid: false, date: '2026-01-15' },
+            ],
+        };
+
+        function getData() {
+            const stored = localStorage.getItem('edumanage_data');
+            if (stored) return JSON.parse(stored);
+            localStorage.setItem('edumanage_data', JSON.stringify(DEFAULT_DATA));
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+
+        function saveData(data) {
+            localStorage.setItem('edumanage_data', JSON.stringify(data));
+        }
+
+        let currentUser = null;
+        let currentPage = 'dashboard';
+
+        // ==================== INITIALIZATION ====================
+        function initApp() {
+            const storedUser = localStorage.getItem('edumanage_currentUser');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                showApp();
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const role = document.getElementById('loginRole').value;
+            const data = getData();
+
+            // Find user by email and role (demo: flexible password)
+            let user = data.users.find(u => u.email === email && u.role === role);
+            if (!user && role) {
+                // Auto-create demo user for any email with selected role
+                user = {
+                    id: 'u' + Date.now(),
+                    name: email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                    email: email,
+                    password: password,
+                    role: role,
+                    subject: role === 'teacher' ? 'General' : undefined,
+                    grade: role === 'learner' ? 'Grade 11' : undefined,
+                    avatar: email.charAt(0).toUpperCase(),
+                    department: role === 'hod' ? 'General' : undefined,
+                    linkedLearner: role === 'parent' ? 'u4' : undefined,
+                };
+                data.users.push(user);
+                saveData(data);
+            }
+            if (!user && !role) {
+                showToast('Please select a role', 'error');
+                return;
+            }
+            if (!user) {
+                // fallback: match by email only
+                user = data.users.find(u => u.email === email);
+            }
+            if (!user) {
+                showToast('User not found. Check credentials or select correct role.', 'error');
+                return;
+            }
+            currentUser = user;
+            localStorage.setItem('edumanage_currentUser', JSON.stringify(currentUser));
+            showToast('Welcome, ' + user.name + '! 🎉', 'success');
+            showApp();
+        }
+
+        function showApp() {
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('appContainer').classList.add('active');
+            document.getElementById('sidebarAvatar').textContent = currentUser.avatar || 'U';
+            document.getElementById('sidebarUserName').textContent = currentUser.name;
+            buildSidebar();
+            navigateTo('dashboard');
+        }
+
+        function logout() {
+            localStorage.removeItem('edumanage_currentUser');
+            currentUser = null;
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.remove('active');
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            showToast('Logged out successfully', 'info');
+        }
+
+        // ==================== SIDEBAR ====================
+        function buildSidebar() {
+            const nav = document.getElementById('sidebarNav');
+            const role = currentUser.role;
+            let links = [];
+
+            const allLinks = {
+                admin: [
+                    { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+                    { page: 'users', icon: '👥', label: 'Manage Users' },
+                    { page: 'marks', icon: '📝', label: 'All Marks' },
+                    { page: 'consultations', icon: '📅', label: 'Consultations' },
+                    { page: 'announcements', icon: '📢', label: 'Announcements' },
+                    { page: 'reports', icon: '📈', label: 'Reports' },
+                    { page: 'settings', icon: '⚙️', label: 'Settings' },
+                ],
+                teacher: [
+                    { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+                    { page: 'myLearners', icon: '🎒', label: 'My Learners' },
+                    { page: 'addMarks', icon: '✏️', label: 'Add/Edit Marks' },
+                    { page: 'consultations', icon: '📅', label: 'Consultations' },
+                    { page: 'topicFeedback', icon: '💡', label: 'Topic Feedback' },
+                ],
+                learner: [
+                    { page: 'dashboard', icon: '📊', label: 'My Dashboard' },
+                    { page: 'myMarks', icon: '📝', label: 'My Marks' },
+                    { page: 'difficultTopics', icon: '🚩', label: 'Difficult Topics' },
+                    { page: 'bookConsultation', icon: '📅', label: 'Book Consultation' },
+                    { page: 'myConsultations', icon: '📋', label: 'My Consultations' },
+                ],
+                parent: [
+                    { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+                    { page: 'childProgress', icon: '👶', label: 'Child Progress' },
+                    { page: 'childMarks', icon: '📝', label: 'Child Marks' },
+                    { page: 'contactTeacher', icon: '💬', label: 'Contact Teacher' },
+                ],
+                hod: [
+                    { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+                    { page: 'departmentMarks', icon: '📝', label: 'Department Marks' },
+                    { page: 'teachers', icon: '👨‍🏫', label: 'Teachers' },
+                    { page: 'reports', icon: '📈', label: 'Reports' },
+                ],
+                librarian: [
+                    { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+                    { page: 'books', icon: '📚', label: 'Manage Books' },
+                    { page: 'borrowed', icon: '📖', label: 'Borrowed Books' },
+                ],
+                clerk: [
+                    { page: 'dashboard', icon: '📊', label: 'Dashboard' },
+                    { page: 'finance', icon: '💰', label: 'Finance Records' },
+                    { page: 'invoices', icon: '🧾', label: 'Invoices' },
+                ],
+            };
+
+            links = allLinks[role] || allLinks['learner'];
+
+            nav.innerHTML = links.map(l => `
+            <li><a class="${currentPage === l.page ? 'active' : ''}" onclick="navigateTo('${l.page}')">
+              <span class="nav-icon">${l.icon}</span> <span>${l.label}</span>
+            </a></li>
+          `).join('');
+        }
+
+        function navigateTo(page) {
+            currentPage = page;
+            buildSidebar();
+            const main = document.getElementById('mainContent');
+            const data = getData();
+            const role = currentUser.role;
+
+            let html = '';
+            switch (page) {
+                case 'dashboard':
+                    html = buildDashboard(data, role);
+                    break;
+                case 'users':
+                    html = buildUsersPage(data);
+                    break;
+                case 'marks':
+                    html = buildAllMarksPage(data);
+                    break;
+                case 'consultations':
+                    html = buildConsultationsPage(data, role);
+                    break;
+                case 'announcements':
+                    html = buildAnnouncementsPage(data);
+                    break;
+                case 'reports':
+                    html = buildReportsPage(data);
+                    break;
+                case 'settings':
+                    html = buildSettingsPage();
+                    break;
+                case 'myLearners':
+                    html = buildMyLearnersPage(data);
+                    break;
+                case 'addMarks':
+                    html = buildAddMarksPage(data);
+                    break;
+                case 'topicFeedback':
+                    html = buildTopicFeedbackPage(data);
+                    break;
+                case 'myMarks':
+                    html = buildMyMarksPage(data);
+                    break;
+                case 'difficultTopics':
+                    html = buildDifficultTopicsPage(data);
+                    break;
+                case 'bookConsultation':
+                    html = buildBookConsultationPage(data);
+                    break;
+                case 'myConsultations':
+                    html = buildMyConsultationsPage(data);
+                    break;
+                case 'childProgress':
+                    html = buildChildProgressPage(data);
+                    break;
+                case 'childMarks':
+                    html = buildChildMarksPage(data);
+                    break;
+                case 'contactTeacher':
+                    html = buildContactTeacherPage(data);
+                    break;
+                case 'departmentMarks':
+                    html = buildDepartmentMarksPage(data);
+                    break;
+                case 'teachers':
+                    html = buildTeachersListPage(data);
+                    break;
+                case 'books':
+                    html = buildBooksPage(data);
+                    break;
+                case 'borrowed':
+                    html = buildBorrowedPage(data);
+                    break;
+                case 'finance':
+                    html = buildFinancePage(data);
+                    break;
+                case 'invoices':
+                    html = buildInvoicesPage(data);
+                    break;
+                default:
+                    html = buildDashboard(data, role);
+            }
+            main.innerHTML = html;
+            // Re-attach event listeners after DOM update
+            setTimeout(attachDynamicListeners, 100);
+        }
+
+        // ==================== DASHBOARD ====================
+        function buildDashboard(data, role) {
+            const totalUsers = data.users.length;
+            const totalMarks = data.marks.length;
+            const pendingConsultations = data.consultations.filter(c => c.status === 'pending').length;
+            const avgScore = data.marks.length > 0 ?
+                Math.round(data.marks.reduce((s, m) => s + (m.score / m.total) * 100, 0) / data.marks.length) :
+                0;
+
+            let statsHTML = '';
+            if (role === 'admin') {
+                statsHTML = `
+              <div class="stat-card purple"><div class="stat-value">${totalUsers}</div><div class="stat-label">Total Users</div><div class="stat-icon">👥</div></div>
+              <div class="stat-card blue"><div class="stat-value">${totalMarks}</div><div class="stat-label">Total Marks Records</div><div class="stat-icon">📝</div></div>
+              <div class="stat-card orange"><div class="stat-value">${pendingConsultations}</div><div class="stat-label">Pending Consultations</div><div class="stat-icon">📅</div></div>
+              <div class="stat-card green"><div class="stat-value">${avgScore}%</div><div class="stat-label">Average Score</div><div class="stat-icon">📈</div></div>
+            `;
+            } else if (role === 'teacher') {
+                const myMarks = data.marks.filter(m => m.teacherId === currentUser.id);
+                const myAvg = myMarks.length > 0 ? Math.round(myMarks.reduce((s, m) => s + (m.score / m.total) * 100, 0) /
+                    myMarks.length) : 0;
+                const myLearners = [...new Set(myMarks.map(m => m.learnerId))].length;
+                statsHTML = `
+              <div class="stat-card purple"><div class="stat-value">${myLearners}</div><div class="stat-label">My Learners</div><div class="stat-icon">🎒</div></div>
+              <div class="stat-card blue"><div class="stat-value">${myMarks.length}</div><div class="stat-label">Marks Recorded</div><div class="stat-icon">✏️</div></div>
+              <div class="stat-card orange"><div class="stat-value">${pendingConsultations}</div><div class="stat-label">Pending Consults</div><div class="stat-icon">📅</div></div>
+              <div class="stat-card green"><div class="stat-value">${myAvg}%</div><div class="stat-label">Class Average</div><div class="stat-icon">📈</div></div>
+            `;
+            } else if (role === 'learner') {
+                const myMarks = data.marks.filter(m => m.learnerId === currentUser.id);
+                const myAvg = myMarks.length > 0 ? Math.round(myMarks.reduce((s, m) => s + (m.score / m.total) * 100, 0) /
+                    myMarks.length) : 0;
+                const myTopics = data.difficultTopics.filter(t => t.learnerId === currentUser.id);
+                const myConsults = data.consultations.filter(c => c.learnerId === currentUser.id);
+                statsHTML = `
+              <div class="stat-card purple"><div class="stat-value">${myMarks.length}</div><div class="stat-label">Assessments</div><div class="stat-icon">📝</div></div>
+              <div class="stat-card blue"><div class="stat-value">${myAvg}%</div><div class="stat-label">My Average</div><div class="stat-icon">🎯</div></div>
+              <div class="stat-card orange"><div class="stat-value">${myTopics.length}</div><div class="stat-label">Flagged Topics</div><div class="stat-icon">🚩</div></div>
+              <div class="stat-card green"><div class="stat-value">${myConsults.length}</div><div class="stat-label">Consultations</div><div class="stat-icon">📅</div></div>
+            `;
+            } else {
+                statsHTML = `
+              <div class="stat-card purple"><div class="stat-value">${totalUsers}</div><div class="stat-label">System Users</div><div class="stat-icon">👥</div></div>
+              <div class="stat-card blue"><div class="stat-value">${totalMarks}</div><div class="stat-label">Total Records</div><div class="stat-icon">📝</div></div>
+              <div class="stat-card green"><div class="stat-value">${avgScore}%</div><div class="stat-label">Overall Average</div><div class="stat-icon">📈</div></div>
+              <div class="stat-card orange"><div class="stat-value">${data.announcements.length}</div><div class="stat-label">Announcements</div><div class="stat-icon">📢</div></div>
+            `;
+            }
+
+            return `
+            <div class="page-header"><h2>👋 Welcome, ${currentUser.name}!</h2><p>${currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)} Dashboard</p></div>
+            <div class="stats-grid">${statsHTML}</div>
+            <div class="card">
+              <h3>📢 Recent Announcements</h3>
+              ${data.announcements.slice(-3).reverse().map(a => `<p style="padding:0.5rem 0;border-bottom:1px solid #e2e8f0;">📌 ${a.text} <small style="color:#94a3b8;">(${a.date})</small></p>`).join('') || '<p class="empty-state">No announcements yet</p>'}
+            </div>
+            <div class="card">
+              <h3>⚡ Quick Overview</h3>
+              <p>You are logged in as <strong>${currentUser.role.toUpperCase()}</strong>. Use the sidebar to navigate through available features.</p>
+              <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${avgScore}%;"></div></div>
+              <small>Overall system average: ${avgScore}%</small>
+            </div>
+          `;
+        }
+
+        // ==================== ADMIN: USERS ====================
+        function buildUsersPage(data) {
+            let rows = data.users.map(u => `
+            <tr>
+              <td><strong>${u.avatar ? u.avatar : '👤'}</strong> ${u.name}</td>
+              <td>${u.email}</td>
+              <td><span class="badge badge-purple">${u.role}</span></td>
+              <td>${u.subject || u.grade || u.department || '-'}</td>
+              <td>
+                <button class="btn btn-sm btn-warning" onclick="editUser('${u.id}')">✏️ Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">🗑️</button>
+              </td>
+            </tr>
+          `).join('');
+            return `
+            <div class="page-header"><h2>👥 Manage Users</h2><p>View, edit, and manage all system users</p></div>
+            <button class="btn btn-primary" style="margin-bottom:1rem;" onclick="openAddUserModal()">➕ Add New User</button>
+            <div class="card"><div class="table-container"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Detail</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+          `;
+        }
+
+        function openAddUserModal() {
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalContent').innerHTML = `
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h3>➕ Add New User</h3>
+            <form onsubmit="addUser(event)">
+              <div class="form-group"><label>Name</label><input type="text" id="newUserName" required></div>
+              <div class="form-group"><label>Email</label><input type="email" id="newUserEmail" required></div>
+              <div class="form-group"><label>Password</label><input type="password" id="newUserPassword" required></div>
+              <div class="form-group"><label>Role</label><select id="newUserRole" required>
+                <option value="admin">Admin</option><option value="teacher">Teacher</option><option value="learner">Learner</option><option value="parent">Parent</option><option value="hod">HOD</option><option value="librarian">Librarian</option><option value="clerk">Clerk</option>
+              </select></div>
+              <div class="form-group"><label>Subject/Grade/Department</label><input type="text" id="newUserDetail" placeholder="e.g. Mathematics / Grade 11"></div>
+              <button type="submit" class="btn btn-primary">✅ Add User</button>
+            </form>
+          `;
+            modal.classList.add('active');
+        }
+
+        function addUser(e) {
+            e.preventDefault();
+            const data = getData();
+            const newUser = {
+                id: 'u' + Date.now(),
+                name: document.getElementById('newUserName').value,
+                email: document.getElementById('newUserEmail').value,
+                password: document.getElementById('newUserPassword').value,
+                role: document.getElementById('newUserRole').value,
+                avatar: document.getElementById('newUserName').value.charAt(0).toUpperCase(),
+                subject: document.getElementById('newUserRole').value === 'teacher' ? document.getElementById(
+                    'newUserDetail').value : undefined,
+                grade: document.getElementById('newUserRole').value === 'learner' ? document.getElementById('newUserDetail')
+                    .value : undefined,
+                department: document.getElementById('newUserRole').value === 'hod' ? document.getElementById('newUserDetail')
+                    .value : undefined,
+            };
+            data.users.push(newUser);
+            saveData(data);
+            closeModal();
+            showToast('User added successfully! ✅', 'success');
+            navigateTo('users');
+        }
+
+        function editUser(userId) {
+            const data = getData();
+            const user = data.users.find(u => u.id === userId);
+            if (!user) return;
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalContent').innerHTML = `
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h3>✏️ Edit User</h3>
+            <form onsubmit="updateUser(event, '${userId}')">
+              <div class="form-group"><label>Name</label><input type="text" id="editUserName" value="${user.name}" required></div>
+              <div class="form-group"><label>Email</label><input type="email" id="editUserEmail" value="${user.email}" required></div>
+              <div class="form-group"><label>Role</label><select id="editUserRole">${['admin','teacher','learner','parent','hod','librarian','clerk'].map(r => `<option value="${r}" ${user.role===r?'selected':''}>${r}</option>`).join('')}</select></div>
+              <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+            </form>
+          `;
+            modal.classList.add('active');
+        }
+
+        function updateUser(e, userId) {
+            e.preventDefault();
+            const data = getData();
+            const user = data.users.find(u => u.id === userId);
+            if (!user) return;
+            user.name = document.getElementById('editUserName').value;
+            user.email = document.getElementById('editUserEmail').value;
+            user.role = document.getElementById('editUserRole').value;
+            user.avatar = user.name.charAt(0).toUpperCase();
+            saveData(data);
+            closeModal();
+            showToast('User updated! ✅', 'success');
+            navigateTo('users');
+        }
+
+        function deleteUser(userId) {
+            if (!confirm('Delete this user?')) return;
+            const data = getData();
+            data.users = data.users.filter(u => u.id !== userId);
+            data.marks = data.marks.filter(m => m.learnerId !== userId && m.teacherId !== userId);
+            data.consultations = data.consultations.filter(c => c.learnerId !== userId && c.teacherId !== userId);
+            data.difficultTopics = data.difficultTopics.filter(t => t.learnerId !== userId);
+            saveData(data);
+            showToast('User deleted', 'info');
+            navigateTo('users');
+        }
+
+        // ==================== MARKS PAGES ====================
+        function buildAllMarksPage(data) {
+            let rows = data.marks.map(m => {
+                const learner = data.users.find(u => u.id === m.learnerId);
+                const teacher = data.users.find(u => u.id === m.teacherId);
+                const pct = Math.round((m.score / m.total) * 100);
+                const badgeClass = pct >= 70 ? 'badge-success' : pct >= 50 ? 'badge-warning' : 'badge-danger';
+                return `
+            <tr>
+              <td>${learner ? learner.name : 'Unknown'}</td>
+              <td>${m.subject}</td>
+              <td>${m.topic}</td>
+              <td>${m.score}/${m.total}</td>
+              <td><span class="badge ${badgeClass}">${pct}%</span></td>
+              <td>${teacher ? teacher.name : 'N/A'}</td>
+              <td>${m.date}</td>
+            </tr>`;
+            }).join('');
+            return `
+            <div class="page-header"><h2>📝 All Marks Records</h2><p>Complete assessment data</p></div>
+            <div class="card"><div class="table-container"><table><thead><tr><th>Learner</th><th>Subject</th><th>Topic</th><th>Score</th><th>Grade</th><th>Teacher</th><th>Date</th></tr></thead><tbody>${rows || '<tr><td colspan="7">No records</td></tr>'}</tbody></table></div></div>
+          `;
+        }
+
+        function buildMyMarksPage(data) {
+            const myMarks = data.marks.filter(m => m.learnerId === currentUser.id);
+            let rows = myMarks.map(m => {
+                const pct = Math.round((m.score / m.total) * 100);
+                const badgeClass = pct >= 70 ? 'badge-success' : pct >= 50 ? 'badge-warning' : 'badge-danger';
+                const feedback = pct >= 70 ? '🌟 Excellent!' : pct >= 50 ? '📖 Keep practicing' : '⚠️ Needs improvement';
+                return `
+            <tr>
+              <td>${m.subject}</td><td>${m.topic}</td><td>${m.score}/${m.total}</td>
+              <td><span class="badge ${badgeClass}">${pct}%</span></td>
+              <td>${feedback}</td><td>${m.date}</td>
+            </tr>`;
+            }).join('');
+            const avg = myMarks.length > 0 ? Math.round(myMarks.reduce((s, m) => s + (m.score / m.total) * 100, 0) / myMarks
+                .length) : 0;
+            return `
+            <div class="page-header"><h2>📝 My Marks</h2><p>Your assessment results</p></div>
+            <div class="stats-grid">
+              <div class="stat-card blue"><div class="stat-value">${myMarks.length}</div><div class="stat-label">Assessments</div></div>
+              <div class="stat-card green"><div class="stat-value">${avg}%</div><div class="stat-label">Average Score</div></div>
+            </div>
+            <div class="card"><div class="table-container"><table><thead><tr><th>Subject</th><th>Topic</th><th>Score</th><th>Grade</th><th>Feedback</th><th>Date</th></tr></thead><tbody>${rows || '<tr><td colspan="6">No marks yet</td></tr>'}</tbody></table></div></div>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${avg}%;"></div></div><small>Overall: ${avg}%</small>
+          `;
+        }
+
+        function buildAddMarksPage(data) {
+            const myLearners = [...new Set(data.marks.filter(m => m.teacherId === currentUser.id).map(m => m.learnerId))];
+            const learners = data.users.filter(u => u.role === 'learner');
+            const learnerOpts = learners.map(l => `<option value="${l.id}">${l.name} (${l.grade || 'N/A'})</option>`).join(
+                '');
+            let rows = data.marks.filter(m => m.teacherId === currentUser.id).map(m => {
+                const learner = data.users.find(u => u.id === m.learnerId);
+                return `
+            <tr>
+              <td>${learner?.name || 'N/A'}</td><td>${m.subject}</td><td>${m.topic}</td><td>${m.score}/${m.total}</td><td>${m.date}</td>
+              <td><button class="btn btn-sm btn-warning" onclick="editMark('${m.id}')">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteMark('${m.id}')">🗑️</button></td>
+            </tr>`;
+            }).join('');
+            return `
+            <div class="page-header"><h2>✏️ Add / Edit Marks</h2><p>Manage your learners' assessments</p></div>
+            <button class="btn btn-primary" style="margin-bottom:1rem;" onclick="openAddMarkModal()">➕ Add New Mark</button>
+            <div class="card"><div class="table-container"><table><thead><tr><th>Learner</th><th>Subject</th><th>Topic</th><th>Score</th><th>Date</th><th>Actions</th></tr></thead><tbody>${rows || '<tr><td colspan="6">No records</td></tr>'}</tbody></table></div></div>
+            <input type="hidden" id="allLearnersOpts" value='${learnerOpts.replace(/'/g, "&#39;")}'>
+          `;
+        }
+
+        function openAddMarkModal() {
+            const data = getData();
+            const learners = data.users.filter(u => u.role === 'learner');
+            const learnerOpts = learners.map(l => `<option value="${l.id}">${l.name} (${l.grade || 'N/A'})</option>`).join(
+                '');
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalContent').innerHTML = `
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h3>➕ Add New Mark</h3>
+            <form onsubmit="addMark(event)">
+              <div class="form-group"><label>Learner</label><select id="markLearner" required>${learnerOpts}</select></div>
+              <div class="form-group"><label>Subject</label><input type="text" id="markSubject" value="${currentUser.subject || ''}" required></div>
+              <div class="form-group"><label>Topic</label><input type="text" id="markTopic" placeholder="e.g. Algebra" required></div>
+              <div class="form-group"><label>Score</label><input type="number" id="markScore" min="0" required></div>
+              <div class="form-group"><label>Total</label><input type="number" id="markTotal" value="100" required></div>
+              <div class="form-group"><label>Date</label><input type="date" id="markDate" value="${new Date().toISOString().split('T')[0]}" required></div>
+              <button type="submit" class="btn btn-primary">✅ Save Mark</button>
+            </form>
+          `;
+            modal.classList.add('active');
+        }
+
+        function addMark(e) {
+            e.preventDefault();
+            const data = getData();
+            const newMark = {
+                id: 'm' + Date.now(),
+                learnerId: document.getElementById('markLearner').value,
+                subject: document.getElementById('markSubject').value,
+                topic: document.getElementById('markTopic').value,
+                score: parseInt(document.getElementById('markScore').value),
+                total: parseInt(document.getElementById('markTotal').value),
+                date: document.getElementById('markDate').value,
+                teacherId: currentUser.id,
+            };
+            data.marks.push(newMark);
+            saveData(data);
+            closeModal();
+            showToast('Mark added! ✅', 'success');
+            navigateTo('addMarks');
+        }
+
+        function editMark(markId) {
+            const data = getData();
+            const mark = data.marks.find(m => m.id === markId);
+            if (!mark) return;
+            const learners = data.users.filter(u => u.role === 'learner');
+            const learnerOpts = learners.map(l =>
+                `<option value="${l.id}" ${mark.learnerId===l.id?'selected':''}>${l.name}</option>`).join('');
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalContent').innerHTML = `
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h3>✏️ Edit Mark</h3>
+            <form onsubmit="updateMark(event, '${markId}')">
+              <div class="form-group"><label>Learner</label><select id="editMarkLearner">${learnerOpts}</select></div>
+              <div class="form-group"><label>Subject</label><input type="text" id="editMarkSubject" value="${mark.subject}" required></div>
+              <div class="form-group"><label>Topic</label><input type="text" id="editMarkTopic" value="${mark.topic}" required></div>
+              <div class="form-group"><label>Score</label><input type="number" id="editMarkScore" value="${mark.score}" required></div>
+              <div class="form-group"><label>Total</label><input type="number" id="editMarkTotal" value="${mark.total}" required></div>
+              <div class="form-group"><label>Date</label><input type="date" id="editMarkDate" value="${mark.date}" required></div>
+              <button type="submit" class="btn btn-primary">💾 Update</button>
+            </form>
+          `;
+            modal.classList.add('active');
+        }
+
+        function updateMark(e, markId) {
+            e.preventDefault();
+            const data = getData();
+            const mark = data.marks.find(m => m.id === markId);
+            if (!mark) return;
+            mark.learnerId = document.getElementById('editMarkLearner').value;
+            mark.subject = document.getElementById('editMarkSubject').value;
+            mark.topic = document.getElementById('editMarkTopic').value;
+            mark.score = parseInt(document.getElementById('editMarkScore').value);
+            mark.total = parseInt(document.getElementById('editMarkTotal').value);
+            mark.date = document.getElementById('editMarkDate').value;
+            saveData(data);
+            closeModal();
+            showToast('Mark updated! ✅', 'success');
+            navigateTo('addMarks');
+        }
+
+        function deleteMark(markId) {
+            if (!confirm('Delete this mark?')) return;
+            const data = getData();
+            data.marks = data.marks.filter(m => m.id !== markId);
+            saveData(data);
+            showToast('Mark deleted', 'info');
+            navigateTo('addMarks');
+        }
+
+        // ==================== DIFFICULT TOPICS ====================
+        function buildDifficultTopicsPage(data) {
+            const myMarks = data.marks.filter(m => m.learnerId === currentUser.id);
+            const topics = [...new Set(myMarks.map(m => ({ subject: m.subject, topic: m.topic })))];
+            const flagged = data.difficultTopics.filter(t => t.learnerId === currentUser.id).map(t => t.topic);
+            const topicTagsHTML = topics.map(t => {
+                const isFlagged = flagged.includes(t.topic);
+                return `<span class="topic-tag ${isFlagged ? 'selected' : ''}" 
+              onclick="toggleDifficultTopic('${t.subject}', '${t.topic}', this)" 
+              data-subject="${t.subject}" data-topic="${t.topic}">
+              ${isFlagged ? '🚩' : '📘'} ${t.subject}: ${t.topic}
+            </span>`;
+            }).join('');
+            return `
+            <div class="page-header"><h2>🚩 Highlight Difficult Topics</h2><p>Click topics you don't understand — they'll be flagged for your teacher</p></div>
+            <div class="card">
+              <h3>📚 Your Topics</h3>
+              <div class="topic-tags">${topicTagsHTML || '<p>No topics from marks yet. Marks will appear here once your teacher adds them.</p>'}</div>
+            </div>
+            <div class="card">
+              <h3>🚩 Currently Flagged</h3>
+              ${flagged.length > 0 ? flagged.map(t => `<span class="badge badge-danger" style="margin:4px;">🚩 ${t}</span>`).join(' ') : '<p>No topics flagged. Click topics above to flag them.</p>'}
+            </div>
+          `;
+        }
+
+        function toggleDifficultTopic(subject, topic, el) {
+            const data = getData();
+            const existing = data.difficultTopics.findIndex(t => t.learnerId === currentUser.id && t.topic === topic &&
+                t.subject === subject);
+            if (existing >= 0) {
+                data.difficultTopics.splice(existing, 1);
+                el.classList.remove('selected');
+                showToast('Topic un-flagged ✅', 'info');
+            } else {
+                data.difficultTopics.push({ learnerId: currentUser.id, subject, topic, flaggedDate: new Date()
+                        .toISOString().split('T')[0] });
+                el.classList.add('selected');
+                showToast('Topic flagged! 🚩 Teacher will be notified', 'warning');
+            }
+            saveData(data);
+            navigateTo('difficultTopics');
+        }
+
+        // ==================== CONSULTATIONS ====================
+        function buildBookConsultationPage(data) {
+            const teachers = data.users.filter(u => u.role === 'teacher');
+            const teacherOpts = teachers.map(t => `<option value="${t.id}">${t.name} (${t.subject || 'General'})</option>`)
+                .join('');
+            const flaggedTopics = data.difficultTopics.filter(t => t.learnerId === currentUser.id);
+            return `
+            <div class="page-header"><h2>📅 Book a Consultation</h2><p>Request a one-on-one session with a teacher</p></div>
+            <div class="card">
+              <form onsubmit="bookConsultation(event)">
+                <div class="form-group"><label>Select Teacher</label><select id="consultTeacher" required>${teacherOpts}</select></div>
+                <div class="form-group"><label>Topic</label><input type="text" id="consultTopic" placeholder="e.g. Trigonometry" required></div>
+                <div class="form-group"><label>Message</label><textarea id="consultMsg" rows="3" style="width:100%;padding:0.7rem;border-radius:8px;border:2px solid #e2e8f0;" placeholder="Describe what you need help with..."></textarea></div>
+                <div class="form-group"><label>Preferred Date</label><input type="date" id="consultDate" min="${new Date().toISOString().split('T')[0]}" required></div>
+                <div class="form-group"><label>Preferred Time</label><input type="time" id="consultTime" required></div>
+                ${flaggedTopics.length > 0 ? `<p style="margin-bottom:0.8rem;">🚩 Your flagged topics: ${flaggedTopics.map(t => t.topic).join(', ')}</p>` : ''}
+                <button type="submit" class="btn btn-primary">📩 Request Consultation</button>
+              </form>
+            </div>
+          `;
+        }
+
+        function bookConsultation(e) {
+            e.preventDefault();
+            const data = getData();
+            const newConsult = {
+                id: 'c' + Date.now(),
+                learnerId: currentUser.id,
+                teacherId: document.getElementById('consultTeacher').value,
+                topic: document.getElementById('consultTopic').value,
+                message: document.getElementById('consultMsg').value,
+                date: document.getElementById('consultDate').value,
+                timeSlot: document.getElementById('consultTime').value,
+                status: 'pending',
+            };
+            data.consultations.push(newConsult);
+            saveData(data);
+            showToast('Consultation requested! ✅', 'success');
+            navigateTo('myConsultations');
+        }
+
+        function buildMyConsultationsPage(data) {
+            const myConsults = data.consultations.filter(c => c.learnerId === currentUser.id);
+            let html = myConsults.map(c => {
+                const teacher = data.users.find(u => u.id === c.teacherId);
+                const statusClass = c.status === 'approved' ? 'approved' : c.status === 'pending' ? 'pending' : '';
+                return `
+            <div class="consultation-card ${statusClass}">
+              <strong>${c.topic}</strong> with ${teacher?.name || 'Teacher'}<br>
+              <small>📅 ${c.date} at ${c.timeSlot}</small><br>
+              <span class="badge ${c.status==='approved'?'badge-success':c.status==='pending'?'badge-warning':'badge-danger'}">${c.status.toUpperCase()}</span>
+              ${c.message ? `<p style="margin-top:0.5rem;color:#64748b;">💬 "${c.message}"</p>` : ''}
+            </div>`;
+            }).join('');
+            return `
+            <div class="page-header"><h2>📋 My Consultations</h2><p>Track your consultation requests</p></div>
+            ${html || '<div class="empty-state"><span class="icon">📅</span><p>No consultations yet</p></div>'}
+          `;
+        }
+
+        function buildConsultationsPage(data, role) {
+            let consults;
+            if (role === 'teacher') {
+                consults = data.consultations.filter(c => c.teacherId === currentUser.id);
+            } else if (role === 'admin') {
+                consults = data.consultations;
+            } else {
+                consults = data.consultations.filter(c => c.learnerId === currentUser.id);
+            }
+            let html = consults.map(c => {
+                const learner = data.users.find(u => u.id === c.learnerId);
+                const teacher = data.users.find(u => u.id === c.teacherId);
+                return `
+            <div class="consultation-card ${c.status==='pending'?'pending':'approved'}">
+              <strong>${c.topic}</strong> | Learner: ${learner?.name||'N/A'} | Teacher: ${teacher?.name||'N/A'}<br>
+              <small>📅 ${c.date} at ${c.timeSlot}</small>
+              <span class="badge ${c.status==='approved'?'badge-success':'badge-warning'}">${c.status.toUpperCase()}</span>
+              ${(role==='teacher'||role==='admin') && c.status==='pending' ? `
+                <br><button class="btn btn-sm btn-success" style="margin-top:0.5rem;" onclick="approveConsult('${c.id}')">✅ Approve</button>
+                <button class="btn btn-sm btn-danger" style="margin-top:0.5rem;" onclick="rejectConsult('${c.id}')">❌ Reject</button>
+              ` : ''}
+            </div>`;
+            }).join('');
+            return `
+            <div class="page-header"><h2>📅 Consultations</h2><p>${role==='teacher'?'Manage consultation requests':'All consultations'}</p></div>
+            ${html || '<div class="empty-state"><span class="icon">📅</span><p>No consultations</p></div>'}
+          `;
+        }
+
+        function approveConsult(consultId) {
+            const data = getData();
+            const c = data.consultations.find(co => co.id === consultId);
+            if (c) { c.status = 'approved';
+                saveData(data);
+                showToast('Consultation approved! ✅', 'success');
+                navigateTo('consultations'); }
+        }
+
+        function rejectConsult(consultId) {
+            const data = getData();
+            const c = data.consultations.find(co => co.id === consultId);
+            if (c) { c.status = 'rejected';
+                saveData(data);
+                showToast('Consultation rejected', 'info');
+                navigateTo('consultations'); }
+        }
+
+        // ==================== OTHER PAGES ====================
+        function buildAnnouncementsPage(data) {
+            return `
+            <div class="page-header"><h2>📢 Announcements</h2></div>
+            <button class="btn btn-primary" style="margin-bottom:1rem;" onclick="openAddAnnouncementModal()">➕ Add Announcement</button>
+            ${data.announcements.slice(-5).reverse().map(a => `<div class="card"><strong>${a.text}</strong><br><small>${a.date} — by ${a.author}</small></div>`).join('')}
+          `;
+        }
+
+        function openAddAnnouncementModal() {
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalContent').innerHTML = `
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h3>📢 New Announcement</h3>
+            <form onsubmit="addAnnouncement(event)">
+              <div class="form-group"><label>Message</label><textarea id="annText" rows="3" style="width:100%;padding:0.7rem;border-radius:8px;border:2px solid #e2e8f0;" required></textarea></div>
+              <button type="submit" class="btn btn-primary">📢 Post</button>
+            </form>
+          `;
+            modal.classList.add('active');
+        }
+
+        function addAnnouncement(e) {
+            e.preventDefault();
+            const data = getData();
+            data.announcements.push({ id: 'a' + Date.now(), text: document.getElementById('annText').value, date: new Date()
+                    .toISOString().split('T')[0], author: currentUser.name });
+            saveData(data);
+            closeModal();
+            showToast('Announcement posted! 📢', 'success');
+            navigateTo('announcements');
+        }
+
+        function buildReportsPage(data) {
+            const avg =
+                data.marks.length > 0 ? Math.round(data.marks.reduce((s, m) => s + (m.score / m.total) * 100, 0) / data.marks
+                    .length) : 0;
+            const passCount = data.marks.filter(m => (m.score / m.total) >= 0.5).length;
+            const failCount = data.marks.length - passCount;
+            return `
+            <div class="page-header"><h2>📈 Reports</h2></div>
+            <div class="stats-grid">
+              <div class="stat-card green"><div class="stat-value">${avg}%</div><div class="stat-label">Overall Average</div></div>
+              <div class="stat-card blue"><div class="stat-value">${passCount}</div><div class="stat-label">Passes (≥50%)</div></div>
+              <div class="stat-card orange"><div class="stat-value">${failCount}</div><div class="stat-label">Needs Support (<50%)</div></div>
+              <div class="stat-card purple"><div class="stat-value">${data.consultations.length}</div><div class="stat-label">Total Consultations</div></div>
+            </div>
+            <div class="card"><h3>📊 Score Distribution</h3><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${avg}%;background:var(--gradient-1);"></div></div><small>Average: ${avg}%</small></div>
+          `;
+        }
+
+        function buildSettingsPage() {
+            return `
+            <div class="page-header"><h2>⚙️ Settings</h2></div>
+            <div class="card">
+              <h3>🔔 Notification Preferences</h3>
+              <label><input type="checkbox" checked> Email notifications for new marks</label><br>
+              <label><input type="checkbox" checked> Consultation updates</label><br>
+              <label><input type="checkbox"> System announcements</label>
+            </div>
+            <div class="card">
+              <h3>🎨 Appearance</h3>
+              <button class="btn btn-outline btn-sm" onclick="document.body.style.background='#f1f5f9';showToast('Light theme','info')">☀️ Light</button>
+              <button class="btn btn-outline btn-sm" onclick="document.body.style.background='#1e293b';document.body.style.color='#e2e8f0';showToast('Dark theme','info')">🌙 Dark</button>
+            </div>
+            <button class="btn btn-danger" onclick="if(confirm('Reset ALL data?')){localStorage.clear();location.reload();}">🔄 Reset System</button>
+          `;
+        }
+
+        function buildMyLearnersPage(data) {
+            const myLearnerIds = [...new Set(data.marks.filter(m => m.teacherId === currentUser.id).map(m => m.learnerId))];
+            const learners = data.users.filter(u => myLearnerIds.includes(u.id));
+            let html = learners.map(l => {
+                const lMarks = data.marks.filter(m => m.learnerId === l.id && m.teacherId === currentUser.id);
+                const avg = lMarks.length > 0 ? Math.round(lMarks.reduce((s, m) => s + (m.score / m.total) * 100, 0) /
+                    lMarks.length) : 0;
+                const flagged = data.difficultTopics.filter(t => t.learnerId === l.id);
+                return `
+            <div class="card">
+              <h3>${l.avatar||'👤'} ${l.name} (${l.grade||'N/A'})</h3>
+              <p>Assessments: ${lMarks.length} | Average: ${avg}%</p>
+              <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${avg}%;"></div></div>
+              ${flagged.length > 0 ? `<p>🚩 Flagged: ${flagged.map(t=>t.topic).join(', ')}</p>` : '<p>✅ No flagged topics</p>'}
+            </div>`;
+            }).join('');
+            return `<div class="page-header"><h2>🎒 My Learners</h2></div>${html || '<div class="empty-state"><p>No learners assigned yet</p></div>'}`;
+        }
+
+        function buildTopicFeedbackPage(data) {
+            const allFlagged = data.difficultTopics;
+            let html = allFlagged.map(t => {
+                const learner = data.users.find(u => u.id === t.learnerId);
+                return `<div class="card"><strong>${learner?.name||'Unknown'}</strong> flagged <span class="badge badge-danger">🚩 ${t.topic}</span> in <strong>${t.subject}</strong> on ${t.flaggedDate}</div>`;
+            }).join('');
+            return `<div class="page-header"><h2>💡 Topic Feedback</h2><p>Topics learners are struggling with</p></div>${html || '<div class="empty-state"><p>No topics flagged yet</p></div>'}`;
+        }
+
+        function buildChildProgressPage(data) {
+            const linkedId = currentUser.linkedLearner || 'u4';
+            const child = data.users.find(u => u.id === linkedId);
+            const childMarks = data.marks.filter(m => m.learnerId === linkedId);
+            const avg = childMarks.length > 0 ? Math.round(childMarks.reduce((s, m) => s + (m.score / m.total) * 100, 0) /
+                childMarks.length) : 0;
+            return `
+            <div class="page-header"><h2>👶 Child Progress</h2></div>
+            <div class="card"><h3>${child?.name||'Child'}'s Overview</h3>
+            <p>Assessments: ${childMarks.length} | Average: ${avg}%</p>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${avg}%;"></div></div></div>
+          `;
+        }
+
+        function buildChildMarksPage(data) {
+            const linkedId = currentUser.linkedLearner || 'u4';
+            const childMarks = data.marks.filter(m => m.learnerId === linkedId);
+            let rows = childMarks.map(m => {
+                const pct = Math.round((m.score / m.total) * 100);
+                return `<tr><td>${m.subject}</td><td>${m.topic}</td><td>${m.score}/${m.total}</td><td><span class="badge ${pct>=70?'badge-success':pct>=50?'badge-warning':'badge-danger'}">${pct}%</span></td><td>${m.date}</td></tr>`;
+            }).join('');
+            return `
+            <div class="page-header"><h2>📝 Child's Marks</h2></div>
+            <div class="card"><div class="table-container"><table><thead><tr><th>Subject</th><th>Topic</th><th>Score</th><th>Grade</th><th>Date</th></tr></thead><tbody>${rows||'<tr><td colspan="5">No marks</td></tr>'}</tbody></table></div></div>
+          `;
+        }
+
+        function buildContactTeacherPage(data) {
+            const teachers = data.users.filter(u => u.role === 'teacher');
+            return `
+            <div class="page-header"><h2>💬 Contact Teacher</h2></div>
+            ${teachers.map(t => `<div class="card"><strong>${t.name}</strong> — ${t.subject||'General'} <br><small>Email: ${t.email}</small><br><button class="btn btn-sm btn-outline" onclick="showToast('Message sent to ${t.name} (demo)','success')">📩 Send Message</button></div>`).join('')}
+          `;
+        }
+
+        function buildDepartmentMarksPage(data) {
+            const allMarks = data.marks;
+            const avg = allMarks.length > 0 ? Math.round(allMarks.reduce((s, m) => s + (m.score / m.total) * 100, 0) / allMarks
+                .length) : 0;
+            return `
+            <div class="page-header"><h2>📝 Department Marks</h2><p>Department: ${currentUser.department||'General'}</p></div>
+            <div class="stat-card green"><div class="stat-value">${avg}%</div><div class="stat-label">Department Average</div></div>
+            <div class="card"><p>Total records: ${allMarks.length}</p></div>
+          `;
+        }
+
+        function buildTeachersListPage(data) {
+            const teachers = data.users.filter(u => u.role === 'teacher');
+            return `
+            <div class="page-header"><h2>👨‍🏫 Teachers</h2></div>
+            ${teachers.map(t => `<div class="card"><strong>${t.name}</strong> — ${t.subject||'General'} | ${t.email}</div>`).join('')}
+          `;
+        }
+
+        function buildBooksPage(data) {
+            let rows = data.libraryBooks.map(b => `
+            <tr><td>${b.title}</td><td>${b.author}</td><td><span class="badge ${b.available?'badge-success':'badge-warning'}">${b.available?'Available':'Borrowed'}</span></td>
+            <td>${b.available ? `<button class="btn btn-sm btn-outline" onclick="borrowBook('${b.id}')">📖 Lend</button>` : `<button class="btn btn-sm btn-success" onclick="returnBook('${b.id}')">↩️ Return</button>`}</td></tr>
+          `).join('');
+            return `
+            <div class="page-header"><h2>📚 Library Books</h2></div>
+            <button class="btn btn-primary" style="margin-bottom:1rem;" onclick="openAddBookModal()">➕ Add Book</button>
+            <div class="card"><div class="table-container"><table><thead><tr><th>Title</th><th>Author</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+          `;
+        }
+
+        function openAddBookModal() {
+            const modal = document.getElementById('modalOverlay');
+            document.getElementById('modalContent').innerHTML = `
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <h3>📚 Add Book</h3>
+            <form onsubmit="addBook(event)">
+              <div class="form-group"><label>Title</label><input type="text" id="bookTitle" required></div>
+              <div class="form-group"><label>Author</label><input type="text" id="bookAuthor" required></div>
+              <button type="submit" class="btn btn-primary">✅ Add</button>
+            </form>
+          `;
+            modal.classList.add('active');
+        }
+
+        function addBook(e) {
+            e.preventDefault();
+            const data = getData();
+            data.libraryBooks.push({ id: 'b' + Date.now(), title: document.getElementById('bookTitle').value, author: document
+                    .getElementById('bookAuthor').value, available: true, borrowedBy: null });
+            saveData(data);
+            closeModal();
+            showToast('Book added! 📚', 'success');
+            navigateTo('books');
+        }
+
+        function borrowBook(bookId) {
+            const data = getData();
+            const book = data.libraryBooks.find(b => b.id === bookId);
+            if (book) { book.available = false;
+                book.borrowedBy = currentUser.id;
+                saveData(data);
+                showToast('Book lent out', 'info');
+                navigateTo('books'); }
+        }
+
+        function returnBook(bookId) {
+            const data = getData();
+            const book = data.libraryBooks.find(b => b.id === bookId);
+            if (book) { book.available = true;
+                book.borrowedBy = null;
+                saveData(data);
+                showToast('Book returned', 'success');
+                navigateTo('books'); }
+        }
+
+        function buildBorrowedPage(data) {
+            const borrowed = data.libraryBooks.filter(b => !b.available);
+            return `
+            <div class="page-header"><h2>📖 Borrowed Books</h2></div>
+            ${borrowed.map(b => `<div class="card"><strong>${b.title}</strong> by ${b.author} | Borrower: ${data.users.find(u=>u.id===b.borrowedBy)?.name||'Unknown'}</div>`).join('') || '<div class="empty-state"><p>No books borrowed</p></div>'}
+          `;
+        }
+
+        function buildFinancePage(data) {
+            let rows = data.financeRecords.map(f => {
+                const learner = data.users.find(u => u.id === f.learnerId);
+                return `
+            <tr><td>${learner?.name||'N/A'}</td><td>${f.description}</td><td>R${f.amount}</td><td><span class="badge ${f.paid?'badge-success':'badge-danger'}">${f.paid?'Paid':'Unpaid'}</span></td><td>${f.date}</td></tr>`;
+            }).join('');
+            return `
+            <div class="page-header"><h2>💰 Finance Records</h2></div>
+            <div class="card"><div class="table-container"><table><thead><tr><th>Learner</th><th>Description</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+          `;
+        }
+
+        function buildInvoicesPage(data) {
+            const unpaid = data.financeRecords.filter(f => !f.paid);
+            return `
+            <div class="page-header"><h2>🧾 Invoices</h2></div>
+            ${unpaid.map(f => `<div class="card"><strong>${f.description}</strong> — R${f.amount} <span class="badge badge-danger">Unpaid</span><br><small>${f.date}</small><br><button class="btn btn-sm btn-success" onclick="markPaid('${f.id}')">✅ Mark as Paid</button></div>`).join('') || '<div class="empty-state"><p>All invoices paid! 🎉</p></div>'}
+          `;
+        }
+
+        function markPaid(financeId) {
+            const data = getData();
+            const f = data.financeRecords.find(fr => fr.id === financeId);
+            if (f) { f.paid = true;
+                saveData(data);
+                showToast('Marked as paid! ✅', 'success');
+                navigateTo('invoices'); }
+        }
+
+        // ==================== MODAL ====================
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ==================== TOAST ====================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+            toast.innerHTML = `${icons[type]||'ℹ️'} ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.4s';
+                setTimeout(() => toast.remove(), 400); }, 3000);
+        }
+
+        // ==================== DYNAMIC LISTENERS ====================
+        function attachDynamicListeners() {
+            // Re-attach any needed listeners after page navigation
+            document.querySelectorAll('.topic-tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    toggleDifficultTopic(this.dataset.subject, this.dataset.topic, this);
+                });
+            });
+        }
+
+        // ==================== KEYBOARD SHORTCUTS ====================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+            if (e.ctrlKey && e.key === 'd') { e.preventDefault();
+                navigateTo('dashboard'); }
+            if (e.ctrlKey && e.key === 'l') { e.preventDefault();
+                logout(); }
+        });
+
+        // ==================== INIT ====================
+        initApp();
+        if (!localStorage.getItem('edumanage_data')) {
+            localStorage.setItem('edumanage_data', JSON.stringify(DEFAULT_DATA));
+        }
+
+        console.log('🎓 EduManage Pro Ready!');
+        console.log('👤 Demo Logins:');
+        console.log('  Admin: admin@school.com / admin123');
+        console.log('  Teacher: teacher@school.com / teacher123');
+        console.log('  Learner: learner@school.com / learner123');
+        console.log('  Parent: parent@school.com / parent123');
+        console.log('  HOD: hod@school.com / hod123');
+        console.log('  Librarian: librarian@school.com / lib123');
+        console.log('  Clerk: clerk@school.com / clerk123');
+        console.log('💡 Or use ANY email + select a role to auto-create a demo account!');
+        console.log('⌨️ Shortcuts: Esc=close modal, Ctrl+D=dashboard, Ctrl+L=logout');
+    </script>
 </body>
 </html>
-
-
