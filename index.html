@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARIS | Academic Risk Intelligence System</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="aris-styles.css">
+</head>
+<body>
+
+    <!-- ═══ LOGIN SCREEN ═══ -->
+    <div id="loginScreen" class="login-wrap">
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="login-logo"><i class="fas fa-graduation-cap"></i></div>
+                <div class="login-brand-text">
+                    <h2>ARIS</h2>
+                    <p>Academic Risk Intelligence System</p>
+                </div>
+            </div>
+
+            <div class="role-tabs" id="roleTabs">
+                <button class="role-tab active" data-role="superadmin"><i class="fas fa-globe"></i><span>Super Admin</span></button>
+                <button class="role-tab" data-role="schooladmin"><i class="fas fa-building"></i><span>School Admin</span></button>
+                <button class="role-tab" data-role="teacher"><i class="fas fa-chalkboard-teacher"></i><span>Teacher</span></button>
+                <button class="role-tab" data-role="learner"><i class="fas fa-user-graduate"></i><span>Learner</span></button>
+            </div>
+
+            <div class="login-field">
+                <label>Email Address</label>
+                <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email">
+            </div>
+            <div class="login-field" id="schoolCodeField">
+                <label>School Code</label>
+                <input type="text" id="loginCode" placeholder="e.g. 321" maxlength="10">
+            </div>
+            <div class="login-field">
+                <label>Password</label>
+                <input type="password" id="loginPass" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()">
+            </div>
+            <div class="login-error" id="loginError"></div>
+            <button class="login-btn" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i>&nbsp; Sign In</button>
+
+            <div class="demo-hint">
+                <strong>Demo Credentials</strong>
+                Super Admin: sa@aris.ac.za | Pass: 123 (no code)<br>
+                School Admin (Sandile): a@aris.ac.za | Pass: 123 | Code: 321<br>
+                School Admin (Sunrise): a2@aris.ac.za | Pass: 123 | Code: 555<br>
+                Teacher: t@aris.ac.za | Pass: 123 | Code: 321<br>
+                Learner: l@aris.ac.za | Pass: 123 | Code: 321
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ APP SHELL ═══ -->
+    <div id="appShell" class="app-shell">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-logo"><i class="fas fa-graduation-cap"></i></div>
+                <div>
+                    <div class="sidebar-brand-text">ARIS</div>
+                    <div class="sidebar-brand-sub">Risk Intelligence System</div>
+                </div>
+            </div>
+            <div class="sidebar-user">
+                <div class="user-info-wrap">
+                    <div class="user-avatar" id="sidebarAvatar"></div>
+                    <div>
+                        <div class="user-name" id="sidebarName"></div>
+                        <div class="user-role" id="sidebarRole"></div>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+            <div class="sidebar-bottom">
+                <button class="sidebar-action" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+            </div>
+        </nav>
+
+        <div class="main-area">
+            <div class="top-header">
+                <div>
+                    <div class="header-title" id="headerTitle">Dashboard</div>
+                    <div class="header-sub" id="headerSub"></div>
+                </div>
+                <div class="header-actions" style="position:relative;">
+                    <button class="hdr-btn" id="notifBtn" onclick="toggleNotifPanel()">
+                        <i class="fas fa-bell"></i>
+                        <span class="notif-dot" id="notifDot"></span>
+                    </button>
+                    <div class="notif-panel" id="notifPanel"></div>
+                </div>
+            </div>
+            <div class="page-content" id="pageContent"></div>
+        </div>
+    </div>
+
+    <!-- ═══ MODAL OVERLAY ═══ -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModalIfOutside(event)">
+        <div class="modal-box" id="modalBox"></div>
+    </div>
+
+    <script src="aris-script.js"></script>
+</body>
+</html>
