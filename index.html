@@ -43,15 +43,14 @@
             <div class="login-error" id="loginError"></div>
             <button class="login-btn" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i>&nbsp; Sign In</button>
 
-            <!-- ═══ APP S
-          <div class="demo-hint">
+            <!-- <div class="demo-hint">
                 <strong>Demo Credentials</strong>
                 Super Admin: sa@aris.ac.za | Pass: 123 (no code)<br>
                 School Admin (Sandile): a@aris.ac.za | Pass: 123 | Code: 321<br>
                 School Admin (Sunrise): a2@aris.ac.za | Pass: 123 | Code: 555<br>
                 Teacher: t@aris.ac.za | Pass: 123 | Code: 321<br>
                 Learner: l@aris.ac.za | Pass: 123 | Code: 321
-            </div> HELL ═══ -->
+            </div> -->
         </div>
     </div>
 
@@ -81,12 +80,37 @@
         </nav>
 
         <div class="main-area">
-            <div class="top-header">
-                <div>
+            <div class="top-icons-bar">
+                <div class="page-title-area">
                     <div class="header-title" id="headerTitle">Dashboard</div>
                     <div class="header-sub" id="headerSub"></div>
                 </div>
                 <div class="header-actions" style="position:relative;">
+                    <button class="hdr-btn profile-btn" id="profileBtn" onclick="toggleProfilePanel()" title="My Profile">
+                        <span class="profile-avatar" id="profileAvatarBtn"></span>
+                    </button>
+                    <div class="profile-panel" id="profilePanel">
+                        <div class="profile-panel-header">
+                            <div class="profile-panel-avatar" id="profilePanelAvatar"></div>
+                            <div>
+                                <div class="profile-panel-name" id="profilePanelName"></div>
+                                <div class="profile-panel-role" id="profilePanelRole"></div>
+                            </div>
+                        </div>
+                        <div class="profile-panel-body">
+                            <button class="profile-panel-btn" onclick="openProfileEdit()">
+                                <i class="fas fa-user-edit"></i> Edit Profile
+                            </button>
+                            <button class="profile-panel-btn" onclick="openPasswordChange()">
+                                <i class="fas fa-key"></i> Change Password
+                            </button>
+                        </div>
+                        <div class="profile-panel-footer">
+                            <button class="profile-panel-btn signout-btn" onclick="handleLogout()">
+                                <i class="fas fa-sign-out-alt"></i> Sign Out
+                            </button>
+                        </div>
+                    </div>
                     <button class="hdr-btn" id="notifBtn" onclick="toggleNotifPanel()">
                         <i class="fas fa-bell"></i>
                         <span class="notif-dot" id="notifDot"></span>
