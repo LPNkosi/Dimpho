@@ -205,7 +205,7 @@ function calcOverallAverage(studentId) {
 function riskBadge(pct) {
   let color, text;
   if (pct >= 65) { color = '#16a34a'; text = 'Good'; }
-  else if (pct >= 50) { color = '#ddff00'; text = 'Moderate'; }
+  else if (pct >= 50) { color = '#85B830'; text = 'Moderate'; }
   else if (pct >= 26) { color = '#d97706'; text = 'At Risk'; }
   else { color = '#dc2626'; text = 'Critical'; }
   return `<span class="badge" style="background:${color}; color:white">${text}</span>`;
@@ -213,7 +213,7 @@ function riskBadge(pct) {
 
 function progColor(pct) {
   if (pct >= 65) return '#16a34a';
-  if (pct >= 50) return '#ddff00';
+  if (pct >= 50) return '#85B830';
   if (pct >= 26) return '#d97706';
   return '#dc2626';
 }
@@ -278,6 +278,7 @@ function initApp() {
   renderSidebarUser();
   renderSidebarNav();
   renderNotifications();
+  renderProfileAvatar();
   navigateTo('dashboard');
 }
 
@@ -294,7 +295,7 @@ function getSidebarNav() {
     { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
     { id: 'schools', icon: 'fa-building', label: 'Schools' },
     { id: 'users', icon: 'fa-users', label: 'User Directory' },
-    { id: 'profile', icon: 'fa-user-cog', label: 'My Profile' }
+
   ];
   if (currentUser.role === 'schooladmin') return [
     { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
@@ -304,7 +305,7 @@ function getSidebarNav() {
     { id: 'approvals', icon: 'fa-check-circle', label: 'Approvals', badge: DB.interventions.filter(i => i.status === 'pending_admin').length },
     { id: 'analytics', icon: 'fa-chart-pie', label: 'School Analytics' },
     { id: 'resources', icon: 'fa-hands-helping', label: 'Resource Desk' },
-    { id: 'profile', icon: 'fa-user-cog', label: 'My Profile' }
+
   ];
   if (currentUser.role === 'teacher') return [
     { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
@@ -312,14 +313,14 @@ function getSidebarNav() {
     { id: 'risk', icon: 'fa-exclamation-triangle', label: 'Risk & Interventions' },
     { id: 'attendance', icon: 'fa-calendar-check', label: 'Attendance' },
     { id: 'resources', icon: 'fa-hands-helping', label: 'Resources' },
-    { id: 'profile', icon: 'fa-user-cog', label: 'My Profile' }
+
   ];
   return [
     { id: 'dashboard', icon: 'fa-chart-line', label: 'Dashboard' },
     { id: 'performance', icon: 'fa-chart-bar', label: 'My Performance' },
     { id: 'resources', icon: 'fa-gift', label: 'My Resources' },
     { id: 'consultations', icon: 'fa-comments', label: 'Consultations' },
-    { id: 'profile', icon: 'fa-user-cog', label: 'My Profile' }
+
   ];
 }
 
@@ -371,11 +372,93 @@ function toggleNotifPanel() {
     renderNotifications();
   }
 }
+
 document.addEventListener('click', e => {
   if (!e.target.closest('#notifBtn') && !e.target.closest('#notifPanel')) {
     $('notifPanel').classList.remove('open');
   }
+  if (!e.target.closest('#profileBtn') && !e.target.closest('#profilePanel')) {
+    const pp = $('profilePanel');
+    if (pp) pp.classList.remove('open');
+  }
 });
+
+function renderProfileAvatar() {
+  const av = document.getElementById('profileAvatarBtn');
+  if (av) {
+    av.textContent = avatarChar(currentUser.name);
+    av.style.background = avatarColor(currentUser.role);
+  }
+}
+
+function toggleProfilePanel() {
+  const panel = document.getElementById('profilePanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    document.getElementById('profilePanelAvatar').textContent = avatarChar(currentUser.name);
+    document.getElementById('profilePanelAvatar').style.background = avatarColor(currentUser.role);
+    document.getElementById('profilePanelName').textContent = currentUser.name;
+    document.getElementById('profilePanelRole').textContent = { superadmin: 'Super Administrator', schooladmin: 'School Administrator', teacher: 'Educator', learner: 'Learner' }[currentUser.role];
+  }
+  document.getElementById('notifPanel').classList.remove('open');
+}
+
+function openProfileEdit() {
+  document.getElementById('profilePanel').classList.remove('open');
+  const c = document.getElementById('pageContent');
+  c.innerHTML = `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Edit Profile</div></div>
+      <div class="card-body">
+        <div class="profile-section">
+          <div><label>Full Name</label><input type="text" id="profEditName" value="${esc(currentUser.name)}"></div>
+          <div><label>Email</label><input type="email" id="profEditEmail" value="${esc(currentUser.email)}"></div>
+          <button class="btn btn-primary" onclick="saveProfileEdit()"><i class="fas fa-save"></i> Save</button>
+          <span id="profEditMsg" style="margin-left:1rem; font-size:0.8rem; color:var(--green); display:none">Saved</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function saveProfileEdit() {
+  currentUser.name = document.getElementById('profEditName').value.trim();
+  currentUser.email = document.getElementById('profEditEmail').value.trim();
+  renderProfileAvatar();
+  renderSidebarUser();
+  document.getElementById('profEditMsg').style.display = 'inline';
+  setTimeout(() => { if (document.getElementById('profEditMsg')) document.getElementById('profEditMsg').style.display = 'none'; }, 2000);
+}
+
+function openPasswordChange() {
+  document.getElementById('profilePanel').classList.remove('open');
+  const c = document.getElementById('pageContent');
+  c.innerHTML = `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Change Password</div></div>
+      <div class="card-body">
+        <div class="profile-section">
+          <div><label>Current Password</label><input type="password" id="passCurrent"></div>
+          <div><label>New Password</label><input type="password" id="passNew"></div>
+          <div><label>Confirm New Password</label><input type="password" id="passConfirm"></div>
+          <button class="btn btn-primary" onclick="savePasswordChange()"><i class="fas fa-save"></i> Update Password</button>
+          <span id="passMsg" style="margin-left:1rem; font-size:0.8rem; display:none"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function savePasswordChange() {
+  const cur = document.getElementById('passCurrent').value;
+  const newP = document.getElementById('passNew').value;
+  const conf = document.getElementById('passConfirm').value;
+  const msg = document.getElementById('passMsg');
+  if (cur !== currentUser.pass) { msg.style.color = 'var(--red)'; msg.textContent = 'Current password incorrect.'; msg.style.display = 'inline'; return; }
+  if (!newP) { msg.style.color = 'var(--red)'; msg.textContent = 'New password required.'; msg.style.display = 'inline'; return; }
+  if (newP !== conf) { msg.style.color = 'var(--red)'; msg.textContent = 'Passwords do not match.'; msg.style.display = 'inline'; return; }
+  currentUser.pass = newP;
+  msg.style.color = 'var(--green)'; msg.textContent = 'Password updated!'; msg.style.display = 'inline';
+  setTimeout(() => { if (document.getElementById('passMsg')) document.getElementById('passMsg').style.display = 'none'; }, 2000);
+}
 
 // ══════════════════════════════════════════════════════
 // PAGE ROUTER
@@ -711,7 +794,7 @@ const lowest = sorted.length ? sorted[0] : 0;
 // New 4‑colour thresholds: green >=65%, yellow 50–74%, orange 26–49%, red <26%
 function categoryColor(pct) {
     if (pct >= 65) return '#16a34a';
-    if (pct >= 50) return '#f59e0b';
+    if (pct >= 50) return '#85B830';
     if (pct >= 26) return '#d97706';
     return '#dc2626';
 }
@@ -781,13 +864,13 @@ c.innerHTML = `
             <div class="analytics-chart">
                 <div style="display: flex; height: 30px; border-radius: 5px; overflow: hidden; margin-bottom: 0.5rem;">
                     <div style="width: ${(groups.good.length / overallAvgs.length * 100).toFixed(1)}%; background: #16a34a;" title="Good ≥65%"></div>
-                    <div style="width: ${(groups.moderate.length / overallAvgs.length * 100).toFixed(1)}%; background: #f59e0b;" title="Moderate 50–64%"></div>
+                    <div style="width: ${(groups.moderate.length / overallAvgs.length * 100).toFixed(1)}%; background: #85B830;" title="Moderate 50–64%"></div>
                     <div style="width: ${(groups.atrisk.length / overallAvgs.length * 100).toFixed(1)}%; background: #d97706;" title="At Risk 26–49%"></div>
                     <div style="width: ${(groups.critical.length / overallAvgs.length * 100).toFixed(1)}%; background: #dc2626;" title="Critical <26%"></div>
                 </div>
                 <div class="legend">
                     <div class="legend-item"><div class="legend-icon" style="background:#16a34a"></div> Good (${groups.good.length})</div>
-                    <div class="legend-item"><div class="legend-icon" style="background:#f59e0b"></div> Moderate (${groups.moderate.length})</div>
+                    <div class="legend-item"><div class="legend-icon" style="background:#85B830"></div> Moderate (${groups.moderate.length})</div>
                     <div class="legend-item"><div class="legend-icon" style="background:#d97706"></div> At Risk (${groups.atrisk.length})</div>
                     <div class="legend-item"><div class="legend-icon" style="background:#dc2626"></div> Critical (${groups.critical.length})</div>
                 </div>
@@ -1412,9 +1495,49 @@ function renderTeacher(c) {
       </div>`;
  
 
+  } else if (activeTab === 'marks') {
+    const grade = teacherState.gradeFilter || defaultGrade;
+    const teacherSubjects = getTeacherSubjectsForGrade(grade);
+    if (!teacherSubjects.length) {
+      c.innerHTML = '<div class="empty-state"><p>No subjects assigned for this grade.</p></div>';
+      return;
+    }
+    teacherState.subjectId = teacherSubjects[0].id;
+    const firstAssessments = getAssessmentsBySubject(teacherState.subjectId);
+    teacherState.assessmentId = firstAssessments.length ? firstAssessments[0].id : null;
 
+    c.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Mark Entry</div><div class="card-subtitle">Grade ${grade}</div></div>
+          <div class="flex-gap">
+            <button class="btn btn-primary btn-sm" onclick="saveMarks()"><i class="fas fa-save"></i> Save Marks</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="toolbar">
+            <select class="form-control" id="markSubjectSel" onchange="onMarkSubjectChange()">
+              ${teacherSubjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}
+            </select>
+            <select class="form-control" id="markAssessSel" onchange="onMarkAssessChange()">
+              ${firstAssessments.map(a => `<option value="${a.id}">${esc(a.name)} (T${a.term})</option>`).join('')}
+            </select>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead id="markTableHead"></thead>
+              <tbody id="markTable"></tbody>
+            </table>
+          </div>
+          <div id="markSaveMsg" style="display:none; color:var(--green); font-size:0.78rem; margin-top:0.5rem; font-weight:600">
+            <i class="fas fa-check-circle"></i> Marks saved successfully.
+          </div>
+        </div>
+      </div>`;
+    buildMarkTable();
+  }
 
-} else if (activeTab === 'risk') {
+ else if (activeTab === 'risk') {
   const grade = teacherState.gradeFilter || defaultGrade;
   const learners = getLearners(currentUser.schoolId, grade);
   const teacherSubjects = getTeacherSubjectsForGrade(grade);
@@ -1472,7 +1595,7 @@ function renderTeacher(c) {
         ${['good','moderate','atrisk','critical'].map(cat => {
           const data = overallGroups[cat];
           if (!data.length) return '';
-          const headerColor = { good: '#16a34a', moderate: '#f59e0b', atrisk: '#d97706', critical: '#dc2626' }[cat];
+          const headerColor = { good: '#16a34a', moderate: '#85B830', atrisk: '#d97706', critical: '#dc2626' }[cat];
           const label = { good: 'Good (≥65%)', moderate: 'Moderate (50–64%)', atrisk: 'At Risk (26–49%)', critical: 'Critical (<26%)' }[cat];
           return `<div style="margin-bottom:1.2rem;">
             <div style="font-weight:700; color:${headerColor}; margin-bottom:0.3rem;">${label} (${data.length})</div>
@@ -1516,7 +1639,7 @@ function renderTeacher(c) {
               ${['moderate','atrisk','critical'].map(level => {
                 const learners = sr.riskLevels[level];
                 if (!learners.length) return '';
-                const headerColor = { moderate: '#f59e0b', atrisk: '#d97706', critical: '#dc2626' }[level];
+                const headerColor = { moderate: '#85B830', atrisk: '#d97706', critical: '#dc2626' }[level];
                 const label = { moderate: 'Moderate (50–64%)', atrisk: 'At Risk (26–49%)', critical: 'Critical (<26%)' }[level];
                 return `<div style="margin-bottom:0.8rem;">
                   <div style="font-weight:600; font-size:0.75rem; color:${headerColor}; margin-bottom:0.2rem;">${label}</div>
@@ -1619,18 +1742,25 @@ function onMarkAssessChange() {
 }
 
 function buildMarkTable() {
-  const tbl = $('markTable');
-  if (!tbl) return;
+  const tbl = document.getElementById('markTable');
+  const head = document.getElementById('markTableHead');
+  if (!tbl || !head) return;
+  
   const questions = getQuestionsByAssessment(teacherState.assessmentId);
   const grade = teacherState.gradeFilter;
   const learners = getLearners(currentUser.schoolId, grade);
-  if (!questions.length) { tbl.innerHTML = '<tr><td class="text-muted">No questions configured for this assessment.</td></tr>'; return; }
+  
+  if (!questions.length) {
+    head.innerHTML = '';
+    tbl.innerHTML = '<tr><td colspan="3" class="text-muted" style="padding:1rem;">No questions configured for this assessment.</td></tr>';
+    return;
+  }
 
-  const headerRow = `<thead><tr>
+  head.innerHTML = `<tr>
     <th>Learner</th>
     ${questions.map(q => `<th>${esc(q.name)}<br><span style="font-weight:400;color:var(--ink-4)">${esc(q.topic)} (/${q.marks})</span></th>`).join('')}
     <th>Total</th><th>%</th>
-  </tr></thead>`;
+  </tr>`;
 
   const bodyRows = learners.map(s => {
     let total = 0, possible = 0;
@@ -1648,7 +1778,7 @@ function buildMarkTable() {
     </tr>`;
   }).join('');
 
-  tbl.innerHTML = headerRow + `<tbody>${bodyRows}</tbody>`;
+  tbl.innerHTML = bodyRows;
 }
 
 function onMarkInput(studentId, assessmentId, questionId, input) {
@@ -1704,7 +1834,7 @@ function buildRiskGrid() {
           <div class="flex-gap">
             <div class="dir-avatar" style="background:var(--green); width:28px; height:28px; font-size:0.7rem">${avatarChar(l.name)}</div>
             <div>
-              <div style="font-weight:600; font-size:0.8rem">${esc(l.name)}${avg>=75?' <i class="fas fa-star" style="color:#f59e0b"></i>':''}</div>
+              <div style="font-weight:600; font-size:0.8rem">${esc(l.name)}${avg>=75?' <i class="fas fa-star" style="color:#85B830"></i>':''}</div>
               <div class="text-muted">Grade ${l.grade}</div>
             </div>
           </div>
@@ -2172,3 +2302,8 @@ window.openInterventionModal = openInterventionModal;
 window.selectIntervOption = selectIntervOption;
 window.submitIntervention = submitIntervention;
 window.updateProfile = updateProfile;
+window.toggleProfilePanel = toggleProfilePanel;
+window.openProfileEdit = openProfileEdit;
+window.saveProfileEdit = saveProfileEdit;
+window.openPasswordChange = openPasswordChange;
+window.savePasswordChange = savePasswordChange;
