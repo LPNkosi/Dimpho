@@ -20,6 +20,8 @@
   --red-light: #fee2e2;
   --green: #16a34a;
   --green-light: #dcfce7;
+  --lime: #85B830;
+  --lime-light: #f2fae6;
   --teal: #0891b2;
   --teal-light: #e0f7fa;
   --sidebar-w: 240px;
@@ -32,6 +34,13 @@
 }
 
 body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; font-size: 14px; }
+
+.top-icons-bar {
+  padding: 1rem 1.5rem 0.5rem;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100; background: var(--surface);
+}
+.page-title-area { flex: 1; }
 
 /* ─── LOGIN ─── */
 .login-wrap {
@@ -155,11 +164,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: va
 
 /* ─── MAIN CONTENT ─── */
 .main-area { margin-left: var(--sidebar-w); flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.top-header {
-  height: var(--header-h); background: var(--white); border-bottom: 1px solid var(--border);
-  padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
+.top-icons-bar {
+  padding: 1rem 1.5rem 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
 }
+.page-title-area {
+  flex: 1;
+}
+
 .header-title { font-size: 0.95rem; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
 .header-sub { font-size: 0.72rem; color: var(--ink-3); margin-top: 1px; }
 .header-actions { display: flex; align-items: center; gap: 0.75rem; }
@@ -225,6 +243,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: va
 .badge-green { background: var(--green-light); color: var(--green); }
 .badge-red { background: var(--red-light); color: var(--red); }
 .badge-amber { background: var(--amber-light); color: var(--amber); }
+.badge-lime { background: var(--lime-light); color: var(--lime); }
 .badge-blue { background: var(--blue-light); color: var(--blue); }
 .badge-teal { background: var(--teal-light); color: var(--teal); }
 .badge-gray { background: var(--surface-2); color: var(--ink-3); }
@@ -393,7 +412,49 @@ tbody tr:hover td { background: var(--surface); }
 
 /* Search bar */
 .search-bar { margin-bottom: 1rem; }
-.search-bar input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.82rem; }
+.search-bar input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.82rem;}
+
+/* ─── PROFILE PANEL ─── */
+.profile-btn { width: auto; padding: 0; border: none; background: transparent; }
+.profile-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: white;
+  cursor: pointer; transition: transform 0.15s;
+}
+.profile-avatar:hover { transform: scale(1.05); }
+
+.profile-panel {
+  position: absolute; top: 100%; right: 0; margin-top: 8px;
+  width: 260px; background: white; border-radius: var(--radius-lg);
+  border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  z-index: 300; display: none; overflow: hidden;
+}
+.profile-panel.open { display: block; }
+.profile-panel-header {
+  padding: 1rem; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.profile-panel-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; font-weight: 700; color: white; flex-shrink: 0;
+}
+.profile-panel-name { font-size: 0.85rem; font-weight: 700; color: var(--ink); }
+.profile-panel-role { font-size: 0.68rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.profile-panel-body { padding: 0.5rem; }
+.profile-panel-footer { padding: 0.5rem; border-top: 1px solid var(--border); }
+.profile-panel-btn {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  border: none; background: transparent; cursor: pointer;
+  font-size: 0.78rem; font-family: inherit; color: var(--ink-2);
+  transition: background 0.15s;
+}
+.profile-panel-btn:hover { background: var(--surface); }
+.profile-panel-btn i { width: 16px; text-align: center; color: var(--ink-3); }
+.signout-btn { color: var(--red); }
+.signout-btn i { color: var(--red); }
 
 /* Analytics legend */
 .legend { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; font-size: 0.7rem; }
