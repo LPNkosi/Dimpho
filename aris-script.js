@@ -275,7 +275,7 @@ function handleLogout() {
 // APP INIT
 // ══════════════════════════════════════════════════════
 function initApp() {
-  renderSidebarUser();
+
   renderSidebarNav();
   renderNotifications();
   renderProfileAvatar();
@@ -349,6 +349,18 @@ function navigateTo(tabId) {
   const school = currentUser.schoolId ? getSchool(currentUser.schoolId) : null;
   $('headerSub').textContent = school ? school.name : (currentUser.role === 'superadmin' ? 'Platform Administrator' : '');
   renderPage();
+  
+  // Special handling for subjects tab to ensure tree renders
+  if (tabId === 'subjects' && currentUser.role === 'schooladmin') {
+    setTimeout(() => {
+      const subjectTree = document.getElementById('subjectTree');
+      if (subjectTree && subjectTree.innerHTML === '') {
+        const schoolId = currentUser.schoolId;
+        const gradeFilter = adminGradeFilter;
+        subjectTree.innerHTML = renderSubjectTree(schoolId, gradeFilter);
+      }
+    }, 100);
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -510,32 +522,145 @@ function updateProfile() {
 // ══════════════════════════════════════════════════════
 function renderSuperAdmin(c) {
   if (activeTab === 'dashboard') {
-    const totalLearners = DB.users.filter(u => u.role === 'learner').length;
-    const totalTeachers = DB.users.filter(u => u.role === 'teacher').length;
+    // Calculate ALL users across all schools
+    const allUsers = DB.users.filter(u => u.status === 'active');
+    const totalLearners = allUsers.filter(u => u.role === 'learner').length;
+    const totalTeachers = allUsers.filter(u => u.role === 'teacher').length;
+    const totalAdmins = allUsers.filter(u => u.role === 'schooladmin').length;
+    const totalPlatformUsers = allUsers.length;
+    const activeSchools = DB.schools.filter(s => s.status === 'active').length;
+    
+    // Calculate overall platform average
+    let allAverages = [];
+    DB.users.filter(u => u.role === 'learner' && u.status === 'active').forEach(learner => {
+      allAverages.push(calcOverallAverage(learner.id));
+    });
+    const platformAvg = allAverages.length > 0 
+      ? allAverages.reduce((a, b) => a + b, 0) / allAverages.length 
+      : 0;
+    
+    // Count at-risk learners across platform
+    const atRiskCount = allAverages.filter(avg => avg < 50).length;
+    
     c.innerHTML = `
       <div class="page-hero">
         <h2>Welcome, ${esc(currentUser.name)}</h2>
         <p>Platform-wide overview — Academic Risk Intelligence System</p>
         <div class="hero-stats">
-          <div><div class="hero-stat-val">${DB.schools.filter(s=>s.status==='active').length}</div><div class="hero-stat-label">Active Schools</div></div>
-          <div><div class="hero-stat-val">${totalLearners}</div><div class="hero-stat-label">Total Learners</div></div>
-          <div><div class="hero-stat-val">${totalTeachers}</div><div class="hero-stat-label">Total Teachers</div></div>
+          <div><div class="hero-stat-val">${activeSchools}</div><div class="hero-stat-label">Active Schools</div></div>
+          <div><div class="hero-stat-val">${totalPlatformUsers}</div><div class="hero-stat-label">Total Users</div></div>
+          <div><div class="hero-stat-val">${Math.round(platformAvg)}%</div><div class="hero-stat-label">Platform Average</div></div>
         </div>
       </div>
+      
+      <!-- Key Stats Row -->
       <div class="stats-row">
-        ${DB.schools.map(s => {
-          const learners = getLearners(s.id).length;
-          const teachers = getTeachers(s.id).length;
-          return `<div class="stat-tile">
-            <div class="stat-tile-top">
-              <div><div class="stat-tile-val">${learners}</div><div class="stat-tile-label">${esc(s.name)}</div></div>
-              <div class="stat-tile-icon" style="background:var(--blue-light); color:var(--blue)"><i class="fas fa-building"></i></div>
+        <div class="stat-tile">
+          <div class="stat-tile-top">
+            <div>
+              <div class="stat-tile-val">${totalLearners}</div>
+              <div class="stat-tile-label">Total Learners</div>
             </div>
-            <div class="text-muted" style="margin-top:6px">${teachers} teachers · Code: <span class="text-mono">${s.code}</span></div>
-          </div>`;
-        }).join('')}
-      </div>`;
-  } else if (activeTab === 'schools') {
+            <div class="stat-tile-icon" style="background:var(--blue-light);color:var(--blue)">
+              <i class="fas fa-user-graduate"></i>
+            </div>
+          </div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-top">
+            <div>
+              <div class="stat-tile-val">${totalTeachers}</div>
+              <div class="stat-tile-label">Total Teachers</div>
+            </div>
+            <div class="stat-tile-icon" style="background:var(--green-light);color:var(--green)">
+              <i class="fas fa-chalkboard-user"></i>
+            </div>
+          </div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-top">
+            <div>
+              <div class="stat-tile-val">${totalAdmins}</div>
+              <div class="stat-tile-label">School Admins</div>
+            </div>
+            <div class="stat-tile-icon" style="background:var(--amber-light);color:var(--amber)">
+              <i class="fas fa-building"></i>
+            </div>
+          </div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-top">
+            <div>
+              <div class="stat-tile-val">${atRiskCount}</div>
+              <div class="stat-tile-label">At-Risk Learners</div>
+            </div>
+            <div class="stat-tile-icon" style="background:var(--red-light);color:var(--red)">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Links -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Quick Actions</div>
+          <div class="card-subtitle">Manage your platform</div>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <button class="btn btn-secondary" style="justify-content: center;" onclick="navigateTo('schools')">
+              <i class="fas fa-building"></i> Manage Schools
+            </button>
+            <button class="btn btn-secondary" style="justify-content: center;" onclick="navigateTo('users')">
+              <i class="fas fa-users"></i> View All Users
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Schools Summary Table (compact view) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Schools Overview</div>
+          <div class="card-subtitle">Click on a school name to manage</div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="tbl-wrap">
+            <table style="width:100%">
+              <thead>
+                <tr>
+                  <th>School Name</th>
+                  <th>Learners</th>
+                  <th>Teachers</th>
+                  <th>Admins</th>
+                  <th>Status</th>
+                  
+              </thead>
+              <tbody>
+                ${DB.schools.map(s => {
+                  const schoolUsers = DB.users.filter(u => u.schoolId === s.id && u.status === 'active');
+                  const learners = schoolUsers.filter(u => u.role === 'learner').length;
+                  const teachers = schoolUsers.filter(u => u.role === 'teacher').length;
+                  const admins = schoolUsers.filter(u => u.role === 'schooladmin').length;
+                  return `
+                    <tr style="cursor: pointer;" onclick="navigateTo('schools')">
+                      <td style="font-weight:600;">${esc(s.name)}</td>
+                      <td>${learners}</td>
+                      <td>${teachers}</td>
+                      <td>${admins}</td>
+                      <td><span class="badge ${s.status === 'active' ? 'badge-green' : 'badge-red'}">${s.status}</span></td>
+                      
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+} else if (activeTab === 'schools') {
     c.innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -571,23 +696,74 @@ function renderSuperAdmin(c) {
           <i class="fas fa-chevron-right chevron"></i> ${esc(school.name)} <span class="badge badge-gray" style="margin-left:auto">${admins.length+teachers.length+learners.length} users</span>
         </div>
         <div class="school-partition-body">
-          ${admins.map(u => dirRowAdmin(u, 'School Admin', '#0891b2')).join('')}
-          ${teachers.map(u => teacherRowSuper(u)).join('')}
-          ${learners.map(u => learnerRowSuper(u)).join('')}
+          ${admins.map(u => dirRowAdminViewOnly(u, 'School Admin', '#0891b2')).join('')}
+          ${teachers.map(u => teacherRowSuperViewOnly(u)).join('')}
+          ${learners.map(u => learnerRowSuperViewOnly(u)).join('')}
         </div>
       </div>`;
     });
-
-     setTimeout(() => {
+    
+    setTimeout(() => {
       const inp = document.getElementById('userSearchInput');
       if (inp) {
         inp.focus();
         inp.setSelectionRange(inp.value.length, inp.value.length);
       }
     }, 10);
-
+    
     c.innerHTML = html;
   }
+}
+
+// View-only versions for Super Admin (no edit/reset buttons)
+function dirRowAdminViewOnly(u, label, color) {
+  return `<div class="directory-row" style="justify-content:space-between; flex-wrap:wrap; gap:6px">
+    <div class="flex-gap">
+      <div class="dir-avatar" style="background:${color}">${avatarChar(u.name)}</div>
+      <div>
+        <div style="font-weight:600; font-size:0.8rem">${esc(u.name)}</div>
+        <div class="text-muted">${esc(u.email)}</div>
+      </div>
+    </div>
+    <div class="flex-gap">
+      <span class="badge badge-gray">${label}</span>
+      <span class="badge ${u.status==='active'?'badge-green':'badge-red'}">${u.status}</span>
+    </div>
+  </div>`;
+}
+
+function teacherRowSuperViewOnly(u) {
+  const subs = u.subjects.map(sid => getSubject(sid)).filter(s => s);
+  const grades = u.grades.join(', ');
+  return `<div class="directory-row" style="flex-wrap:wrap; justify-content:space-between">
+    <div class="flex-gap">
+      <div class="dir-avatar" style="background:#7c3aed">${avatarChar(u.name)}</div>
+      <div>
+        <div style="font-weight:600; font-size:0.8rem">${esc(u.name)}</div>
+        <div class="text-muted">${esc(u.email)}</div>
+        <div class="text-muted">Grades: ${grades || '—'} · Subjects: ${subs.map(s=>s.name).join(', ') || '—'}</div>
+      </div>
+    </div>
+    <div class="flex-gap">
+      <span class="badge badge-gray">Teacher</span>
+      <span class="badge ${u.status==='active'?'badge-green':'badge-red'}">${u.status}</span>
+    </div>
+  </div>`;
+}
+
+function learnerRowSuperViewOnly(u) {
+  return `<div class="directory-row" style="justify-content:space-between; flex-wrap:wrap">
+    <div class="flex-gap">
+      <div class="dir-avatar" style="background:#16a34a">${avatarChar(u.name)}</div>
+      <div>
+        <div style="font-weight:600; font-size:0.8rem">${esc(u.name)} <span class="badge badge-gray">G${u.grade}</span></div>
+        <div class="text-muted">${esc(u.email)}</div>
+      </div>
+    </div>
+    <div class="flex-gap">
+      <span class="badge ${u.status==='active'?'badge-green':'badge-red'}">${u.status}</span>
+    </div>
+  </div>`;
 }
 
 function dirRowAdmin(u, label, color) {
@@ -607,6 +783,16 @@ function dirRowAdmin(u, label, color) {
   </div>`;
 }
 
+function refreshSubjectTree() {
+  if (activeTab === 'subjects' && currentUser.role === 'schooladmin') {
+    const schoolId = currentUser.schoolId;
+    const subjectTree = document.getElementById('subjectTree');
+    if (subjectTree) {
+      subjectTree.innerHTML = renderSubjectTree(schoolId, adminGradeFilter);
+    }
+  }
+}
+
 // ══════════════════════════════════════════════════════
 // SCHOOL ADMIN
 // ══════════════════════════════════════════════════════
@@ -617,8 +803,14 @@ function renderSchoolAdmin(c) {
   const schoolSubjects = DB.subjects.filter(s => s.schoolId === schoolId);
   const pendingCount = DB.interventions.filter(i => i.status === 'pending_admin').length;
 
-  if (activeTab === 'dashboard') {
+if (activeTab === 'dashboard') {
     const atRisk = learners.filter(l => calcOverallAverage(l.id) < 50).length;
+    
+    // Get unique subject names (to avoid double-counting same subject names across grades)
+    const uniqueSubjects = new Set();
+    schoolSubjects.forEach(s => uniqueSubjects.add(s.name));
+    const uniqueSubjectCount = uniqueSubjects.size;
+    
     c.innerHTML = `
       <div class="page-hero">
         <h2>${esc(getSchool(schoolId).name)}</h2>
@@ -631,7 +823,16 @@ function renderSchoolAdmin(c) {
       </div>
       <div class="stats-row">
         <div class="stat-tile">
-          <div class="stat-tile-top"><div><div class="stat-tile-val">${schoolSubjects.length}</div><div class="stat-tile-label">Active Subjects</div></div><div class="stat-tile-icon" style="background:var(--blue-light);color:var(--blue)"><i class="fas fa-book"></i></div></div>
+          <div class="stat-tile-top">
+            <div>
+              <div class="stat-tile-val">${uniqueSubjectCount}</div>
+              <div class="stat-tile-label">Active Subjects</div>
+            </div>
+            <div class="stat-tile-icon" style="background:var(--blue-light);color:var(--blue)"><i class="fas fa-book"></i></div>
+          </div>
+          <div class="text-muted" style="margin-top:8px; font-size:0.7rem;">
+            ${schoolSubjects.length} total offerings (${schoolSubjects.filter(s => s.grade === 10).length} Gr10, ${schoolSubjects.filter(s => s.grade === 11).length} Gr11, ${schoolSubjects.filter(s => s.grade === 12).length} Gr12)
+          </div>
         </div>
         <div class="stat-tile">
           <div class="stat-tile-top"><div><div class="stat-tile-val">${pendingCount}</div><div class="stat-tile-label">Pending Approvals</div></div><div class="stat-tile-icon" style="background:var(--amber-light);color:var(--amber)"><i class="fas fa-clock"></i></div></div>
@@ -640,27 +841,37 @@ function renderSchoolAdmin(c) {
           <div class="stat-tile-top"><div><div class="stat-tile-val">${DB.resources.filter(r=>r.active).length}</div><div class="stat-tile-label">Active Resources</div></div><div class="stat-tile-icon" style="background:var(--teal-light);color:var(--teal)"><i class="fas fa-hands-helping"></i></div></div>
         </div>
       </div>`;
-  } else if (activeTab === 'users') {
+
+} else if (activeTab === 'users') {
     const schoolUsers = DB.users.filter(u => u.schoolId === schoolId);
     const tch = filterUsers(schoolUsers.filter(u => u.role === 'teacher'), userSearchTerm);
     const lrn = filterUsers(schoolUsers.filter(u => u.role === 'learner'), userSearchTerm);
-    const learnersByGrade = {};
-    lrn.forEach(u => {
-      const g = u.grade;
-      if (!learnersByGrade[g]) learnersByGrade[g] = [];
-      learnersByGrade[g].push(u);
-    });
-    let learnersHtml = '';
-    for (const [grade, learnersList] of Object.entries(learnersByGrade)) {
-      learnersHtml += `<div class="school-partition">
-        <div class="school-partition-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('collapsed')">
-          <i class="fas fa-chevron-right chevron"></i> Grade ${grade} <span class="badge badge-gray" style="margin-left:auto">${learnersList.length} learners</span>
-        </div>
-        <div class="school-partition-body">
-          ${learnersList.map(u => learnerRowAdmin(u)).join('')}
-        </div>
-      </div>`;
-    }
+    // Group learners by grade and sort grades in descending order (12, 11, 10)
+const learnersByGrade = {};
+lrn.forEach(u => {
+  const g = u.grade;
+  if (!learnersByGrade[g]) learnersByGrade[g] = [];
+  learnersByGrade[g].push(u);
+});
+
+// Sort grades in descending order (highest grade first)
+const sortedGrades = Object.keys(learnersByGrade).sort((a, b) => b - a);
+
+let learnersHtml = '';
+for (const grade of sortedGrades) {
+  const learnersList = learnersByGrade[grade];
+  // Sort learners alphabetically by name within each grade
+  learnersList.sort((a, b) => a.name.localeCompare(b.name));
+  
+  learnersHtml += `<div class="school-partition">
+    <div class="school-partition-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('collapsed')">
+      <i class="fas fa-chevron-right chevron"></i> Grade ${grade} <span class="badge badge-gray" style="margin-left:auto">${learnersList.length} learners</span>
+    </div>
+    <div class="school-partition-body">
+      ${learnersList.map(u => learnerRowAdmin(u)).join('')}
+    </div>
+  </div>`;
+}
     c.innerHTML = `
     <div class="search-bar"><input type="text" id="userSearchInput" placeholder="Search by name or email..." value="${esc(userSearchTerm || '')}" oninput="userSearchTerm = this.value; navigateTo('users')"></div>
       <div class="card">
@@ -700,12 +911,12 @@ function renderSchoolAdmin(c) {
         </div>
         <div class="card-body">
           <div class="grade-select-tabs">
-            ${grades.map(g => `<button class="grade-tab ${adminGradeFilter===g?'active':''}" onclick="adminGradeFilter=${g}; navigateTo('subjects')">Grade ${g}</button>`).join('')}
+            ${grades.map(g => `<button class="grade-tab ${adminGradeFilter===g?'active':''}" onclick="adminGradeFilter=${g}; refreshSubjectTree()">Grade ${g}</button>`).join('')}
           </div>
           <div class="tree-container" id="subjectTree">${renderSubjectTree(schoolId, adminGradeFilter)}</div>
         </div>
       </div>`;
-  } else if (activeTab === 'assessments') {
+} else if (activeTab === 'assessments') {
     const subs = DB.subjects.filter(s => s.schoolId === schoolId);
     c.innerHTML = `
       <div class="card">
@@ -769,273 +980,242 @@ function renderSchoolAdmin(c) {
           }).join('') : `<div class="empty-state"><i class="fas fa-check-circle" style="color:var(--green)"></i><p>No pending approvals</p></div>`}
         </div>
       </div>`;
-  } else if (activeTab === 'analytics') {
-    
 
-// Inside renderSchoolAdmin, activeTab === 'analytics'
-const learners = getLearners(schoolId);
-const avgData = learners.map(l => ({
+} else if (activeTab === 'analytics') {
+    
+// Initialize or get filter states
+if (typeof schoolAnalyticsFilter === 'undefined') window.schoolAnalyticsFilter = { grade: null, subject: null, search: '' };
+
+const schoolId = currentUser.schoolId;
+const allLearners = getLearners(schoolId);
+const allSubjects = DB.subjects.filter(s => s.schoolId === schoolId);
+
+// Get unique grades from learners
+const availableGrades = [...new Set(allLearners.map(l => l.grade))].sort((a, b) => b - a);
+
+// Apply filters
+let filteredLearners = [...allLearners];
+
+// Grade filter
+if (window.schoolAnalyticsFilter.grade) {
+    filteredLearners = filteredLearners.filter(l => l.grade === window.schoolAnalyticsFilter.grade);
+}
+
+// Subject filter
+if (window.schoolAnalyticsFilter.subject) {
+    const subjectId = window.schoolAnalyticsFilter.subject;
+    filteredLearners = filteredLearners.filter(l => l.subjects.includes(subjectId));
+}
+
+// Search filter
+if (window.schoolAnalyticsFilter.search) {
+    const searchTerm = window.schoolAnalyticsFilter.search.toLowerCase();
+    filteredLearners = filteredLearners.filter(l => 
+        l.name.toLowerCase().includes(searchTerm) || 
+        l.email.toLowerCase().includes(searchTerm)
+    );
+}
+
+// Calculate performance data for filtered learners
+const learnerPerformance = filteredLearners.map(l => ({
     learner: l,
     overall: calcOverallAverage(l.id),
-    subjects: DB.subjects.filter(s => l.subjects.includes(s.id)).map(sub => ({
-        name: sub.name,
-        avg: calcSubjectAverage(l.id, sub.id)
-    }))
+    grade: l.grade
 }));
 
-// Overall statistics
-const overallAvgs = avgData.map(d => d.overall);
-const schoolAvg = overallAvgs.reduce((a, b) => a + b, 0) / (overallAvgs.length || 1);
-const sorted = [...overallAvgs].sort((a, b) => a - b);
-const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
-const highest = sorted.length ? sorted[sorted.length - 1] : 0;
-const lowest = sorted.length ? sorted[0] : 0;
-
-// New 4‑colour thresholds: green >=65%, yellow 50–74%, orange 26–49%, red <26%
-function categoryColor(pct) {
-    if (pct >= 65) return '#16a34a';
-    if (pct >= 50) return '#85B830';
-    if (pct >= 26) return '#d97706';
-    return '#dc2626';
-}
-function categoryName(pct) {
-    if (pct >= 65) return 'Good';
-    if (pct >= 50) return 'Moderate';
-    if (pct >= 26) return 'At Risk';
-    return 'Critical';
-}
-function categoryBadge(pct) {
-    return `<span class="badge" style="background:${categoryColor(pct)}; color:white">${categoryName(pct)}</span>`;
+// Calculate subject averages if subject filter is applied
+let subjectAvg = null;
+if (window.schoolAnalyticsFilter.subject) {
+    const subjectId = window.schoolAnalyticsFilter.subject;
+    const subjectScores = filteredLearners.map(l => calcSubjectAverage(l.id, subjectId));
+    subjectAvg = subjectScores.reduce((a, b) => a + b, 0) / (subjectScores.length || 1);
 }
 
-// Build category groups with learner details
-const groups = { good: [], moderate: [], atrisk: [], critical: [] };
-avgData.forEach(d => {
-    const avg = d.overall;
-    if (avg >= 65) groups.good.push({...d, avg});
-    else if (avg >= 50) groups.moderate.push({...d, avg});
-    else if (avg >= 26) groups.atrisk.push({...d, avg});
-    else groups.critical.push({...d, avg});
-});
+// Overall school average (filtered)
+const schoolAvg = learnerPerformance.length > 0 
+    ? learnerPerformance.reduce((sum, d) => sum + d.overall, 0) / learnerPerformance.length 
+    : 0;
 
-// Grade statistics
-const gradeStats = {};
-avgData.forEach(d => {
-    const g = d.learner.grade;
-    if (!gradeStats[g]) gradeStats[g] = { total: 0, count: 0, learners: [] };
-    gradeStats[g].total += d.overall;
-    gradeStats[g].count++;
-    gradeStats[g].learners.push(d);
-});
-
-// Subject averages
-const subjectAvgs = {};
-avgData.forEach(d => {
-    d.subjects.forEach(sub => {
-        if (!subjectAvgs[sub.name]) subjectAvgs[sub.name] = { total: 0, count: 0 };
-        subjectAvgs[sub.name].total += sub.avg;
-        subjectAvgs[sub.name].count++;
-    });
-});
+// Distribution counts
+const distribution = {
+    critical: learnerPerformance.filter(d => d.overall < 30).length,
+    atrisk: learnerPerformance.filter(d => d.overall >= 30 && d.overall < 50).length,
+    moderate: learnerPerformance.filter(d => d.overall >= 50 && d.overall < 70).length,
+    good: learnerPerformance.filter(d => d.overall >= 70).length
+};
 
 c.innerHTML = `
-    <!-- Top stat tiles (always visible) -->
+    <!-- Filter Bar -->
+    <div style="background: white; border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem; border: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-filter" style="color: var(--ink-3);"></i>
+                <span style="font-weight: 600; font-size: 0.8rem;">Filters:</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label style="font-size: 0.75rem; font-weight: 600;">Grade:</label>
+                <select id="analyticsGradeFilter" class="form-control" style="width: auto; padding: 6px 12px;" onchange="applyAnalyticsFilters()">
+                    <option value="">All Grades</option>
+                    ${availableGrades.map(g => `<option value="${g}" ${window.schoolAnalyticsFilter.grade === g ? 'selected' : ''}>Grade ${g}</option>`).join('')}
+                </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label style="font-size: 0.75rem; font-weight: 600;">Subject:</label>
+                <select id="analyticsSubjectFilter" class="form-control" style="width: auto; padding: 6px 12px;" onchange="applyAnalyticsFilters()">
+                    <option value="">All Subjects</option>
+                    ${allSubjects.map(s => `<option value="${s.id}" ${window.schoolAnalyticsFilter.subject === s.id ? 'selected' : ''}>${esc(s.name)} (G${s.grade})</option>`).join('')}
+                </select>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="clearAnalyticsFilters()">
+                <i class="fas fa-times"></i> Clear Filters
+            </button>
+        </div>
+        
+        <!-- Search Bar -->
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 1rem;">
+            <i class="fas fa-search" style="color: var(--ink-3);"></i>
+            <input type="text" id="analyticsSearchInput" placeholder="Search by learner name or email..." 
+                   style="flex: 1; min-width: 200px; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.8rem;"
+                   value="${esc(window.schoolAnalyticsFilter.search || '')}"
+                   onkeyup="if(event.key==='Enter') applyAnalyticsSearch()">
+            <button class="btn btn-primary btn-sm" onclick="applyAnalyticsSearch()">
+                <i class="fas fa-search"></i> Search
+            </button>
+            ${window.schoolAnalyticsFilter.search ? `
+                <button class="btn btn-secondary btn-sm" onclick="clearAnalyticsSearch()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            ` : ''}
+        </div>
+        
+        <!-- Filter Summary -->
+        ${(window.schoolAnalyticsFilter.grade || window.schoolAnalyticsFilter.subject || window.schoolAnalyticsFilter.search) ? 
+            `<div class="text-muted" style="margin-top: 0.75rem; font-size: 0.7rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+                <i class="fas fa-info-circle"></i> Showing ${filteredLearners.length} of ${allLearners.length} learners
+            </div>` : ''
+        }
+    </div>
+
+    <!-- Key Stats Row -->
     <div class="stats-row">
         <div class="stat-tile">
-            <div class="stat-tile-top"><div><div class="stat-tile-val">${Math.round(schoolAvg)}%</div><div class="stat-tile-label">School Average</div></div><div class="stat-tile-icon" style="background:var(--blue-light);color:var(--blue)"><i class="fas fa-chart-line"></i></div></div>
-        </div>
-        <div class="stat-tile">
-            <div class="stat-tile-top"><div><div class="stat-tile-val">${Math.round(median)}%</div><div class="stat-tile-label">Median</div></div><div class="stat-tile-icon" style="background:var(--teal-light);color:var(--teal)"><i class="fas fa-divide"></i></div></div>
-        </div>
-        <div class="stat-tile">
-            <div class="stat-tile-top"><div><div class="stat-tile-val">${Math.round(highest)}%</div><div class="stat-tile-label">Highest</div></div><div class="stat-tile-icon" style="background:var(--green-light);color:var(--green)"><i class="fas fa-arrow-up"></i></div></div>
-        </div>
-        <div class="stat-tile">
-            <div class="stat-tile-top"><div><div class="stat-tile-val">${Math.round(lowest)}%</div><div class="stat-tile-label">Lowest</div></div><div class="stat-tile-icon" style="background:var(--red-light);color:var(--red)"><i class="fas fa-arrow-down"></i></div></div>
-        </div>
-    </div>
-
-    <!-- 1. Collapsible Performance Distribution -->
-    <div class="card">
-        <div class="card-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')" style="cursor:pointer;">
-            <div class="card-title"><i class="fas fa-chevron-right chevron" style="transition: transform 0.2s;"></i> Performance Distribution</div>
-        </div>
-        <div class="card-body tree-children open">
-            <div class="analytics-chart">
-                <div style="display: flex; height: 30px; border-radius: 5px; overflow: hidden; margin-bottom: 0.5rem;">
-                    <div style="width: ${(groups.good.length / overallAvgs.length * 100).toFixed(1)}%; background: #16a34a;" title="Good ≥65%"></div>
-                    <div style="width: ${(groups.moderate.length / overallAvgs.length * 100).toFixed(1)}%; background: #85B830;" title="Moderate 50–64%"></div>
-                    <div style="width: ${(groups.atrisk.length / overallAvgs.length * 100).toFixed(1)}%; background: #d97706;" title="At Risk 26–49%"></div>
-                    <div style="width: ${(groups.critical.length / overallAvgs.length * 100).toFixed(1)}%; background: #dc2626;" title="Critical <26%"></div>
+            <div class="stat-tile-top">
+                <div>
+                    <div class="stat-tile-val">${Math.round(schoolAvg)}%</div>
+                    <div class="stat-tile-label">Average Performance</div>
                 </div>
-                <div class="legend">
-                    <div class="legend-item"><div class="legend-icon" style="background:#16a34a"></div> Good (${groups.good.length})</div>
-                    <div class="legend-item"><div class="legend-icon" style="background:#85B830"></div> Moderate (${groups.moderate.length})</div>
-                    <div class="legend-item"><div class="legend-icon" style="background:#d97706"></div> At Risk (${groups.atrisk.length})</div>
-                    <div class="legend-item"><div class="legend-icon" style="background:#dc2626"></div> Critical (${groups.critical.length})</div>
+                <div class="stat-tile-icon" style="background:var(--blue-light);color:var(--blue)">
+                    <i class="fas fa-chart-line"></i>
                 </div>
             </div>
-            <!-- Expanded learner list grouped by category -->
-            <div style="margin-top: 1.5rem;">
-                ${['good','moderate','atrisk','critical'].map(cat => {
-                    if (groups[cat].length === 0) return '';
-                    const catTitle = cat === 'good' ? 'Good (≥65%)' : cat === 'moderate' ? 'Moderate (50–64%)' : cat === 'atrisk' ? 'At Risk (26–49%)' : 'Critical (<26%)';
-                    return `<div style="margin-bottom: 1rem;">
-                        <div style="font-weight: 700; margin-bottom: 0.5rem; color: ${categoryColor(cat === 'good' ? 65 : cat === 'moderate' ? 50 : cat === 'atrisk' ? 26 : 0)}">${catTitle}</div>
-                        <div class="tbl-wrap">
-                            <table style="width:100%; font-size:0.8rem;">
-                                <thead><tr><th>Learner</th><th>Grade</th><th>Overall</th></tr></thead>
-                                <tbody>
-                                    ${groups[cat].map(d => `
-                                        <tr>
-                                            <td>${esc(d.learner.name)}</td>
-                                            <td><span class="badge badge-gray">G${d.learner.grade}</span></td>
-                                            <td style="color:${categoryColor(d.avg)}; font-weight:700;">${Math.round(d.avg)}%</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-                }).join('')}
+            <div class="prog-bar" style="margin-top: 8px;">
+                <div class="prog-fill" style="width: ${schoolAvg}%; background: ${schoolAvg >= 70 ? '#16a34a' : schoolAvg >= 50 ? '#85B830' : schoolAvg >= 30 ? '#d97706' : '#dc2626'};"></div>
+            </div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-tile-top">
+                <div>
+                    <div class="stat-tile-val">${filteredLearners.length}</div>
+                    <div class="stat-tile-label">Total Learners</div>
+                </div>
+                <div class="stat-tile-icon" style="background:var(--green-light);color:var(--green)">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-tile-top">
+                <div>
+                    <div class="stat-tile-val">${distribution.good + distribution.moderate}</div>
+                    <div class="stat-tile-label">Passing (≥50%)</div>
+                </div>
+                <div class="stat-tile-icon" style="background:var(--teal-light);color:var(--teal)">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-tile-top">
+                <div>
+                    <div class="stat-tile-val">${distribution.atrisk + distribution.critical}</div>
+                    <div class="stat-tile-label">At Risk (<50%)</div>
+                </div>
+                <div class="stat-tile-icon" style="background:var(--red-light);color:var(--red)">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. Collapsible Performance by Grade -->
+    <!-- Performance Distribution Graph -->
     <div class="card">
-        <div class="card-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')" style="cursor:pointer;">
-            <div class="card-title"><i class="fas fa-chevron-right chevron"></i> Performance by Grade</div>
+        <div class="card-header">
+            <div class="card-title">Performance Distribution</div>
+            <div class="card-subtitle">Overall risk breakdown</div>
         </div>
-        <div class="card-body tree-children open">
-            <div class="stats-row" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
-                ${Object.entries(gradeStats).map(([grade, stats]) => {
-                    const avg = stats.total / stats.count;
-                    return `<div class="stat-tile">
-                        <div class="stat-tile-top"><div><div class="stat-tile-val" style="font-size:1.2rem;">${Math.round(avg)}%</div><div class="stat-tile-label">Grade ${grade}</div></div></div>
-                        <div class="prog-bar" style="margin-top:8px;"><div class="prog-fill" style="width:${avg}%; background:${categoryColor(avg)}"></div></div>
-                    </div>`;
-                }).join('')}
-            </div>
-            <!-- Expanded: per‑grade subject breakdown -->
-            <div style="margin-top: 1.5rem;">
-                ${Object.entries(gradeStats).map(([grade, stats]) => {
-                    // Compute subject averages for this grade
-                    const gradeSubjects = {};
-                    stats.learners.forEach(d => {
-                        d.subjects.forEach(sub => {
-                            if (!gradeSubjects[sub.name]) gradeSubjects[sub.name] = { total: 0, count: 0 };
-                            gradeSubjects[sub.name].total += sub.avg;
-                            gradeSubjects[sub.name].count++;
-                        });
-                    });
-                    return `<div style="margin-bottom: 1.5rem;">
-                        <div style="font-weight:700; margin-bottom:0.3rem;">Grade ${grade} Subject Averages</div>
-                        <div class="tbl-wrap">
-                            <table style="font-size:0.78rem; width:100%">
-                                <thead><tr><th>Subject</th><th>Average</th></tr></thead>
-                                <tbody>
-                                    ${Object.entries(gradeSubjects).map(([name, data]) => {
-                                        const avg = data.total / data.count;
-                                        return `<tr><td>${esc(name)}</td><td style="color:${categoryColor(avg)}; font-weight:700;">${Math.round(avg)}%</td></tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-                }).join('')}
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. Collapsible Subject Performance Overview -->
-    <div class="card">
-        <div class="card-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')" style="cursor:pointer;">
-            <div class="card-title"><i class="fas fa-chevron-right chevron"></i> Subject Performance Overview</div>
-        </div>
-        <div class="card-body tree-children open">
-            ${Object.entries(subjectAvgs).map(([subj, stats]) => {
-                const avg = stats.total / stats.count;
-                return `<div style="margin-bottom:0.8rem;">
-                    <div class="flex-between" style="margin-bottom:3px">
-                        <span style="font-size:0.78rem; font-weight:600">${esc(subj)}</span>
-                        <span style="font-size:0.75rem; font-weight:700; color:${categoryColor(avg)}">${Math.round(avg)}%</span>
+        <div class="card-body">
+            <!-- Horizontal bar chart -->
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; height: 40px; border-radius: 8px; overflow: hidden; margin-bottom: 0.75rem;">
+                    <div style="width: ${(distribution.good / filteredLearners.length * 100).toFixed(1)}%; background: #16a34a; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: 600;">
+                        ${distribution.good > 0 ? Math.round(distribution.good / filteredLearners.length * 100) + '%' : ''}
                     </div>
-                    <div class="prog-bar"><div class="prog-fill" style="width:${avg}%; background:${categoryColor(avg)}"></div></div>
-                </div>`;
-            }).join('')}
-            <!-- Expanded: per‑subject assessment details -->
-            <div style="margin-top:1.5rem;">
-                ${Object.keys(subjectAvgs).map(subjName => {
-                    // Find subject id and its assessments
-                    const subjObj = DB.subjects.find(s => s.name === subjName && s.schoolId === schoolId);
-                    if (!subjObj) return '';
-                    const assessments = getAssessmentsBySubject(subjObj.id);
-                    // Overall assessment stats across all learners
-                    const assessmentStats = assessments.map(ass => {
-                        const qs = getQuestionsByAssessment(ass.id);
-                        let totalPct = 0, count = 0;
-                        avgData.forEach(d => {
-                            if (!d.learner.subjects.includes(subjObj.id)) return;
-                            const { earned, possible, pct } = calcAssessmentScore(d.learner.id, ass.id);
-                            totalPct += pct;
-                            count++;
-                        });
-                        return { name: ass.name, avg: count > 0 ? totalPct / count : 0 };
-                    });
-                    return `<div style="margin-bottom:1rem;">
-                        <div style="font-weight:700; font-size:0.8rem;">${esc(subjName)} Assessments</div>
-                        <div class="tbl-wrap">
-                            <table style="font-size:0.75rem; width:100%">
-                                <thead><tr><th>Assessment</th><th>Average %</th></tr></thead>
-                                <tbody>
-                                    ${assessmentStats.map(as => `
-                                        <tr>
-                                            <td>${esc(as.name)}</td>
-                                            <td style="color:${categoryColor(as.avg)}; font-weight:700;">${Math.round(as.avg)}%</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-                }).join('')}
+                    <div style="width: ${(distribution.moderate / filteredLearners.length * 100).toFixed(1)}%; background: #85B830; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: 600;">
+                        ${distribution.moderate > 0 ? Math.round(distribution.moderate / filteredLearners.length * 100) + '%' : ''}
+                    </div>
+                    <div style="width: ${(distribution.atrisk / filteredLearners.length * 100).toFixed(1)}%; background: #d97706; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: 600;">
+                        ${distribution.atrisk > 0 ? Math.round(distribution.atrisk / filteredLearners.length * 100) + '%' : ''}
+                    </div>
+                    <div style="width: ${(distribution.critical / filteredLearners.length * 100).toFixed(1)}%; background: #dc2626; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: 600;">
+                        ${distribution.critical > 0 ? Math.round(distribution.critical / filteredLearners.length * 100) + '%' : ''}
+                    </div>
+                </div>
+                <div class="legend" style="justify-content: center;">
+                    <div class="legend-item"><div class="legend-icon" style="background:#16a34a"></div> Good (≥70%) - ${distribution.good} learners</div>
+                    <div class="legend-item"><div class="legend-icon" style="background:#85B830"></div> Moderate (50-69%) - ${distribution.moderate} learners</div>
+                    <div class="legend-item"><div class="legend-icon" style="background:#d97706"></div> At Risk (30-49%) - ${distribution.atrisk} learners</div>
+                    <div class="legend-item"><div class="legend-icon" style="background:#dc2626"></div> Critical (<30%) - ${distribution.critical} learners</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 4. Collapsible Learner Details Table (same as before but with updated colors) -->
+    <!-- Learner List -->
     <div class="card">
-        <div class="card-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')" style="cursor:pointer;">
-            <div class="card-title"><i class="fas fa-chevron-right chevron"></i> Learner Details</div>
-            <span class="text-muted">${avgData.length} learners</span>
+        <div class="card-header">
+            <div class="card-title">Learner Performance</div>
+            <div class="card-subtitle">Click column headers to sort | ${filteredLearners.length} learner${filteredLearners.length !== 1 ? 's' : ''} found</div>
         </div>
-        <div class="card-body tree-children" style="padding:0;">
+        <div class="card-body" style="padding:0;">
             <div class="tbl-wrap">
-                <table id="learnerSortTable">
+                <table id="analyticsLearnerTable" style="width:100%">
                     <thead>
                         <tr>
-                            <th class="sortable" data-sort="name">Name</th>
+                            <th class="sortable" data-sort="name">Learner Name</th>
                             <th class="sortable" data-sort="grade">Grade</th>
-                            <th class="sortable" data-sort="overall">Overall</th>
+                            <th class="sortable" data-sort="overall">Overall Average</th>
                             <th class="sortable" data-sort="status">Status</th>
-                            <th class="sortable" data-sort="topSubject">Top Subject</th>
-                            <th class="sortable" data-sort="lowSubject">Lowest Subject</th>
+                            ${window.schoolAnalyticsFilter.subject ? '<th>Subject Average</th>' : ''}
                         </tr>
                     </thead>
                     <tbody>
-                        ${avgData.map(d => {
-                            const topSubject = d.subjects.reduce((a,b) => a.avg > b.avg ? a : b, {name:'-', avg:0});
-                            const lowSubject = d.subjects.reduce((a,b) => a.avg < b.avg ? a : b, {name:'-', avg:100});
-                            return `<tr data-name="${esc(d.learner.name).toLowerCase()}" data-grade="${d.learner.grade}" data-overall="${d.overall.toFixed(1)}" data-status="${categoryName(d.overall)}" data-top="${esc(topSubject.name).toLowerCase()}" data-low="${esc(lowSubject.name).toLowerCase()}">
-                                <td style="font-weight:600;">${esc(d.learner.name)}</td>
-                                <td><span class="badge badge-gray">G${d.learner.grade}</span></td>
-                                <td><span style="font-weight:700; color:${categoryColor(d.overall)}">${Math.round(d.overall)}%</span></td>
-                                <td>${categoryBadge(d.overall)}</td>
-                                <td>${esc(topSubject.name)} (${Math.round(topSubject.avg)}%)</td>
-                                <td>${esc(lowSubject.name)} (${Math.round(lowSubject.avg)}%)</td>
-                            </tr>`;
+                        ${learnerPerformance.sort((a, b) => b.overall - a.overall).map(d => {
+                            const subjectScore = window.schoolAnalyticsFilter.subject 
+                                ? calcSubjectAverage(d.learner.id, window.schoolAnalyticsFilter.subject)
+                                : null;
+                            const statusColor = d.overall >= 70 ? '#16a34a' : d.overall >= 50 ? '#85B830' : d.overall >= 30 ? '#d97706' : '#dc2626';
+                            const statusText = d.overall >= 70 ? 'Good' : d.overall >= 50 ? 'Moderate' : d.overall >= 30 ? 'At Risk' : 'Critical';
+                            return `
+                                <tr data-name="${esc(d.learner.name).toLowerCase()}" data-grade="${d.learner.grade}" data-overall="${d.overall.toFixed(1)}" data-status="${statusText}">
+                                    <td style="font-weight:600;">${esc(d.learner.name)}</td>
+                                    <td><span class="badge badge-gray">G${d.learner.grade}</span></td>
+                                    <td><span style="font-weight:700; color:${statusColor};">${Math.round(d.overall)}%</span></td>
+                                    <td><span class="badge" style="background:${statusColor}; color:white;">${statusText}</span></td>
+                                    ${window.schoolAnalyticsFilter.subject ? `<td><span style="font-weight:600; color:${subjectScore >= 70 ? '#16a34a' : subjectScore >= 50 ? '#85B830' : subjectScore >= 30 ? '#d97706' : '#dc2626'};">${Math.round(subjectScore)}%</span></td>` : ''}
+                                </tr>
+                            `;
                         }).join('')}
+                        ${learnerPerformance.length === 0 ? '<tr><td colspan="4" class="empty-state">No learners match the selected filters.</td></tr>' : ''}
                     </tbody>
                 </table>
             </div>
@@ -1043,9 +1223,9 @@ c.innerHTML = `
     </div>
 `;
 
-// Activate sorting on the table (after render)
+// Add sorting functionality
 setTimeout(() => {
-    const table = document.getElementById('learnerSortTable');
+    const table = document.getElementById('analyticsLearnerTable');
     if (!table) return;
     const headers = table.querySelectorAll('th.sortable');
     headers.forEach(th => {
@@ -1055,14 +1235,16 @@ setTimeout(() => {
             headers.forEach(h => h.classList.remove('asc', 'desc'));
             th.classList.add(isAsc ? 'desc' : 'asc');
             const direction = isAsc ? -1 : 1;
-            sortTable(table, sortKey, direction);
+            sortAnalyticsTable(table, sortKey, direction);
         });
     });
 }, 50);
 
+}
 
 
-} else if (activeTab === 'resources') {
+
+ else if (activeTab === 'resources') {
     c.innerHTML = `
       <div class="card">
         <div class="card-header">
@@ -1087,25 +1269,207 @@ setTimeout(() => {
   }
 }
 
+// Apply filters for School Analytics
+function applyAnalyticsFilters() {
+    const gradeFilter = document.getElementById('analyticsGradeFilter')?.value;
+    const subjectFilter = document.getElementById('analyticsSubjectFilter')?.value;
+    
+    window.schoolAnalyticsFilter = {
+        grade: gradeFilter ? parseInt(gradeFilter) : null,
+        subject: subjectFilter ? parseInt(subjectFilter) : null,
+        search: window.schoolAnalyticsFilter?.search || ''
+    };
+    
+    navigateTo('analytics');
+}
+
+// Apply search filter
+function applyAnalyticsSearch() {
+    const searchInput = document.getElementById('analyticsSearchInput');
+    if (searchInput) {
+        window.schoolAnalyticsFilter.search = searchInput.value;
+        navigateTo('analytics');
+    }
+}
+
+// Clear all analytics filters
+function clearAnalyticsFilters() {
+    window.schoolAnalyticsFilter = { grade: null, subject: null, search: '' };
+    navigateTo('analytics');
+}
+
+// Clear only search filter
+function clearAnalyticsSearch() {
+    if (window.schoolAnalyticsFilter) {
+        window.schoolAnalyticsFilter.search = '';
+        navigateTo('analytics');
+    }
+}
+
+// Sort function for analytics table
+function sortAnalyticsTable(table, key, direction) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+        let valA = a.dataset[key] || '';
+        let valB = b.dataset[key] || '';
+        if (key === 'grade') {
+            valA = parseInt(valA) || 0;
+            valB = parseInt(valB) || 0;
+        }
+        if (key === 'overall') {
+            valA = parseFloat(valA) || 0;
+            valB = parseFloat(valB) || 0;
+        }
+        if (valA < valB) return -1 * direction;
+        if (valA > valB) return 1 * direction;
+        return 0;
+    });
+    rows.forEach(row => tbody.appendChild(row));
+}
+// Apply filters for School Analytics
+function applyAnalyticsFilters() {
+    const gradeFilter = document.getElementById('analyticsGradeFilter')?.value;
+    const subjectFilter = document.getElementById('analyticsSubjectFilter')?.value;
+    
+    window.schoolAnalyticsFilter = {
+        grade: gradeFilter ? parseInt(gradeFilter) : null,
+        subject: subjectFilter ? parseInt(subjectFilter) : null
+    };
+    
+    navigateTo('analytics');
+}
+
+// Clear all analytics filters
+function clearAnalyticsFilters() {
+    window.schoolAnalyticsFilter = { grade: null, subject: null };
+    navigateTo('analytics');
+}
+
+// Sort function for analytics table
+function sortAnalyticsTable(table, key, direction) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+        let valA = a.dataset[key] || '';
+        let valB = b.dataset[key] || '';
+        if (key === 'grade') {
+            valA = parseInt(valA) || 0;
+            valB = parseInt(valB) || 0;
+        }
+        if (key === 'overall') {
+            valA = parseFloat(valA) || 0;
+            valB = parseFloat(valB) || 0;
+        }
+        if (valA < valB) return -1 * direction;
+        if (valA > valB) return 1 * direction;
+        return 0;
+    });
+    rows.forEach(row => tbody.appendChild(row));
+}
+
 function renderSubjectTree(schoolId, gradeFilter) {
   const subjects = DB.subjects.filter(s => s.schoolId === schoolId && s.grade === gradeFilter);
-  return subjects.map(s => {
+  
+  console.log("Rendering subjects for grade:", gradeFilter, "Found:", subjects.length);
+  
+  if (subjects.length === 0) {
+    return '<div class="empty-state" style="padding: 2rem;"><i class="fas fa-folder-open"></i><p>No subjects added for Grade ' + gradeFilter + ' yet.</p><button class="btn btn-primary btn-sm mt-2" onclick="openAddSubjectModal()"><i class="fas fa-plus"></i> Add Subject</button></div>';
+  }
+  
+  let html = '';
+  
+  for (let s of subjects) {
     const assessments = getAssessmentsBySubject(s.id);
-    return `<div class="tree-grade">
-      <div class="tree-grade-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')">
-        <i class="fas fa-chevron-right chevron"></i> ${esc(s.name)} (Grade ${s.grade})
+    html += `<div class="tree-grade" style="margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+      <div class="tree-grade-header" onclick="toggleTreeChildren(this)" style="cursor: pointer; padding: 12px 16px; background: var(--blue-light); font-weight: 600; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-chevron-right chevron" style="transition: transform 0.2s;"></i>
+        <i class="fas fa-book"></i>
+        ${esc(s.name)}
+        <span class="badge badge-gray" style="margin-left: 8px;">Grade ${s.grade}</span>
+        <span class="badge badge-blue" style="margin-left: auto;">${assessments.length} assessments</span>
       </div>
-      <div class="tree-children">
-        ${assessments.map(a => {
-          const questions = getQuestionsByAssessment(a.id);
-          return `<div class="tree-assessment">
-            <i class="fas fa-file-alt"></i> ${esc(a.name)} (${a.type}, Term ${a.term}) - ${a.totalMarks} marks
-            <div class="tree-children">${questions.map(q => `<div class="tree-question"><i class="fas fa-question-circle"></i> ${esc(q.name)}: ${q.marks} marks (${esc(q.topic)})</div>`).join('')}</div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }).join('');
+      <div class="tree-children" style="padding: 12px 16px; background: var(--white); display: block;">`;
+    
+    if (assessments.length === 0) {
+      html += `<div class="text-muted" style="padding: 12px; text-align: center;"><i class="fas fa-info-circle"></i> No assessments yet. <button class="btn btn-primary btn-sm" onclick="openAddAssessmentModal()">Add Assessment</button></div>`;
+    } else {
+      for (let a of assessments) {
+        const questions = getQuestionsByAssessment(a.id);
+        const totalQuestionsMarks = questions.reduce((sum, q) => sum + q.marks, 0);
+        const marksMatch = totalQuestionsMarks === a.totalMarks;
+        
+        html += `<div style="margin: 12px 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden;">
+          <div style="padding: 10px 12px; background: var(--surface); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <i class="fas fa-file-alt" style="color: var(--blue);"></i>
+            <strong>${esc(a.name)}</strong>
+            <span class="badge badge-gray">${a.type}</span>
+            <span class="badge badge-gray">Term ${a.term}</span>
+            <span class="badge ${marksMatch ? 'badge-green' : 'badge-red'}">${a.totalMarks} marks</span>
+            ${!marksMatch && questions.length > 0 ? `<span class="badge badge-amber">⚠️ Questions sum: ${totalQuestionsMarks}</span>` : ''}
+            <span style="margin-left: auto;" class="text-muted">Weight: ${a.weight}%</span>
+          </div>
+          <div style="padding: 10px 12px; background: var(--white); border-top: 1px solid var(--border);">`;
+        
+        if (questions.length === 0) {
+          html += `<div class="text-muted" style="padding: 8px;"><i class="fas fa-info-circle"></i> No questions added yet</div>`;
+        } else {
+          for (let q of questions) {
+            html += `<div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-2);">
+              <i class="fas fa-question-circle" style="color: var(--teal); width: 20px;"></i>
+              <strong style="width: 40px;">${esc(q.name)}</strong>
+              <span class="badge badge-blue">${q.marks} marks</span>
+              <span class="badge badge-gray">${esc(q.topic)}</span>
+            </div>`;
+          }
+        }
+        
+        html += `</div></div>`;
+      }
+    }
+    
+    html += `</div></div>`;
+  }
+  
+  return html;
+}
+
+// Helper function to toggle tree children
+function toggleTreeChildren(element) {
+  element.classList.toggle('open');
+  const childrenDiv = element.nextElementSibling;
+  if (childrenDiv) {
+    if (childrenDiv.style.display === 'none') {
+      childrenDiv.style.display = 'block';
+    } else {
+      childrenDiv.style.display = 'none';
+    }
+  }
+}
+
+function refreshDashboardSubjectCount() {
+  if (currentUser && currentUser.role === 'schooladmin' && activeTab === 'dashboard') {
+    const c = document.getElementById('pageContent');
+    renderSchoolAdmin(c);
+  }
+}
+
+function debugSubjectStructure() {
+  console.log("=== SUBJECT STRUCTURE DEBUG ===");
+  console.log("Total subjects:", DB.subjects.length);
+  DB.subjects.forEach(sub => {
+    console.log(`\n📚 Subject: ${sub.name} (Grade ${sub.grade}, ID: ${sub.id})`);
+    const assessments = getAssessmentsBySubject(sub.id);
+    console.log(`   Assessments: ${assessments.length}`);
+    assessments.forEach(ass => {
+      console.log(`   📝 ${ass.name} (${ass.totalMarks} marks, Weight: ${ass.weight}%)`);
+      const questions = getQuestionsByAssessment(ass.id);
+      console.log(`      Questions: ${questions.length}`);
+      questions.forEach(q => {
+        console.log(`         ❓ ${q.name}: ${q.marks} marks (${q.topic})`);
+      });
+    });
+  });
 }
 
 function renderAssessmentsList() {
@@ -1187,23 +1551,62 @@ function toggleSchoolStatus(id) {
 }
 
 function openAddUserModal(role) {
-  const grades = [10,11,12];
+  const grades = [10, 11, 12];
   const allSubjects = DB.subjects.filter(s => s.schoolId === currentUser.schoolId);
+  
   let html = `<div class="modal-title">Add ${role === 'teacher' ? 'Teacher' : 'Learner'}</div>
     <div class="modal-field"><label>Full Name</label><input type="text" id="newUserName"></div>
     <div class="modal-field"><label>Email</label><input type="email" id="newUserEmail"></div>`;
+  
   if (role === 'learner') {
     html += `<div class="modal-field"><label>Grade</label><select id="newUserGrade">${grades.map(g=>`<option value="${g}">Grade ${g}</option>`).join('')}</select></div>
     <div class="modal-field"><label>Subjects</label><div id="newUserSubs">${allSubjects.filter(s=>s.grade===10).map(s=>`<label><input type="checkbox" value="${s.id}" class="newSubChk"> ${esc(s.name)}</label><br>`).join('')}</div></div>`;
   } else {
-    html += `<div class="modal-field"><label>Grades</label><div>${grades.map(g=>`<label><input type="checkbox" value="${g}" class="newGradeChk"> Grade ${g}</label>`).join(' ')}</div></div>
-    <div class="modal-field"><label>Subjects</label><div id="newUserSubs">${allSubjects.map(s=>`<label><input type="checkbox" value="${s.id}" class="newSubChk"> ${esc(s.name)} (G${s.grade})</label><br>`).join('')}</div></div>`;
+    // Group subjects by grade for Teacher
+    const subjectsByGrade = {};
+    allSubjects.forEach(s => {
+        if (!subjectsByGrade[s.grade]) subjectsByGrade[s.grade] = [];
+        subjectsByGrade[s.grade].push(s);
+    });
+    
+    // Sort subjects alphabetically within each grade
+    Object.keys(subjectsByGrade).forEach(grade => {
+        subjectsByGrade[grade].sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    // Get sorted grades (descending: 12, 11, 10)
+    const sortedGrades = Object.keys(subjectsByGrade).sort((a, b) => b - a);
+    
+    html += `<div class="modal-field">
+        <label>Assigned Grades</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">${grades.map(g => `<label><input type="checkbox" value="${g}" class="newGradeChk"> Grade ${g}</label>`).join('')}</div>
+    </div>
+    <div class="modal-field">
+        <label>Subjects (by Grade)</label>
+        <div style="border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); max-height:300px; overflow-y:auto;">
+            ${sortedGrades.map(grade => {
+                const gradeSubjects = subjectsByGrade[grade];
+                if (!gradeSubjects || gradeSubjects.length === 0) {
+                    return `<div style="margin-bottom:12px;">
+                        <div style="font-weight:700; font-size:0.75rem; color:var(--blue); margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px;">Grade ${grade}</div>
+                        <div style="color:var(--ink-4); font-size:0.7rem; padding-left:8px;">No subjects available for Grade ${grade}</div>
+                    </div>`;
+                }
+                return `<div style="margin-bottom:12px;">
+                    <div style="font-weight:700; font-size:0.75rem; color:var(--blue); margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px;">Grade ${grade}</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; padding-left:8px;">
+                        ${gradeSubjects.map(s => `<label><input type="checkbox" value="${s.id}" class="newSubChk"> ${esc(s.name)}</label>`).join('')}
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>
+    </div>`;
   }
+  
   html += `<div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
     <button class="btn btn-primary" onclick="addUser('${role}')">Add</button></div>`;
   openModal(html);
 }
-
 function addUser(role) {
   const name = $('newUserName').value.trim();
   const email = $('newUserEmail').value.trim();
@@ -1236,19 +1639,80 @@ function openEditUserModal(userId) {
   const u = getUser(userId);
   if (!u) return;
   const grades = [10,11,12];
-  const allSubjects = DB.subjects.filter(s => s.schoolId === currentUser.schoolId);
+  let allSubjects = DB.subjects.filter(s => s.schoolId === currentUser.schoolId);
+  
+  // Sort subjects by grade first, then by name
+  allSubjects = allSubjects.sort((a, b) => {
+    if (a.grade !== b.grade) return a.grade - b.grade;
+    return a.name.localeCompare(b.name);
+  });
+  
   let html = `
     <div class="modal-title">Edit User — ${esc(u.name)}</div>
     <div class="modal-field"><label>Full Name</label><input type="text" id="editUserName" value="${esc(u.name)}"></div>
     <div class="modal-field"><label>Email</label><input type="email" id="editUserEmail" value="${esc(u.email)}"></div>
   `;
+  
   if (u.role === 'learner') {
-    html += `<div class="modal-field"><label>Grade</label><select id="editUserGrade">${grades.map(g => `<option value="${g}" ${u.grade===g?'selected':''}>Grade ${g}</option>`).join('')}</select></div>
-    <div class="modal-field"><label>Subjects</label><div style="display:flex; flex-wrap:wrap; gap:8px">${allSubjects.filter(s=>s.grade===u.grade).map(s => `<label><input type="checkbox" value="${s.id}" ${u.subjects.includes(s.id)?'checked':''} class="editSubChk"> ${esc(s.name)}</label>`).join('')}</div></div>`;
-  } else if (u.role === 'teacher') {
-    html += `<div class="modal-field"><label>Assigned Grades</label><div style="display:flex; gap:8px">${grades.map(g => `<label><input type="checkbox" value="${g}" ${u.grades.includes(g)?'checked':''} class="editGradeChk"> Grade ${g}</label>`).join('')}</div></div>
-    <div class="modal-field"><label>Subjects</label><div style="display:flex; flex-wrap:wrap; gap:8px">${allSubjects.map(s => `<label><input type="checkbox" value="${s.id}" ${u.subjects.includes(s.id)?'checked':''} class="editSubChk"> ${esc(s.name)} (G${s.grade})</label>`).join('')}</div></div>`;
-  }
+    // Sort grades for learner dropdown (descending)
+    const sortedLearnerGrades = [...grades].sort((a, b) => b - a);
+    
+    let gradeSubjects = allSubjects.filter(s => s.grade === u.grade);
+    gradeSubjects = gradeSubjects.sort((a, b) => a.name.localeCompare(b.name));
+    
+    html += `<div class="modal-field">
+        <label>Grade</label>
+        <select id="editUserGrade" class="form-control" style="width:200px;">${sortedLearnerGrades.map(g => `<option value="${g}" ${u.grade===g?'selected':''}>Grade ${g}</option>`).join('')}</select>
+    </div>
+    <div class="modal-field">
+        <label>Subjects for Grade ${u.grade}</label>
+        <div style="border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface); display:flex; flex-wrap:wrap; gap:8px;">
+            ${gradeSubjects.map(s => `<label><input type="checkbox" value="${s.id}" ${u.subjects.includes(s.id)?'checked':''} class="editSubChk"> ${esc(s.name)}</label>`).join('')}
+        </div>
+    </div>`;
+    
+    // Add a note if no subjects available
+    if (gradeSubjects.length === 0) {
+        html += `<div class="text-muted" style="margin-top:-8px; margin-bottom:12px; font-size:0.7rem;"><i class="fas fa-info-circle"></i> No subjects available for Grade ${u.grade}. Please add subjects first.</div>`;
+    }
+} else if (u.role === 'teacher') {
+    // Sort grades for teacher (descending order: 12, 11, 10)
+    const sortedTeacherGrades = [...grades].sort((a, b) => b - a);
+    
+    // Group subjects by grade and sort within each grade
+    const subjectsByGrade = {};
+    allSubjects.forEach(s => {
+        if (!subjectsByGrade[s.grade]) subjectsByGrade[s.grade] = [];
+        subjectsByGrade[s.grade].push(s);
+    });
+    
+    // Sort subjects alphabetically within each grade
+    Object.keys(subjectsByGrade).forEach(grade => {
+        subjectsByGrade[grade].sort((a, b) => a.name.localeCompare(b.name));
+    });
+    
+    // Get sorted grades for subjects (descending)
+    const sortedSubjectGrades = Object.keys(subjectsByGrade).sort((a, b) => b - a);
+    
+    html += `<div class="modal-field">
+        <label>Assigned Grades</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">${sortedTeacherGrades.map(g => `<label><input type="checkbox" value="${g}" ${u.grades.includes(g)?'checked':''} class="editGradeChk"> Grade ${g}</label>`).join('')}</div>
+    </div>
+    <div class="modal-field">
+        <label>Subjects (by Grade)</label>
+        <div style="border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--surface);">
+            ${sortedSubjectGrades.map(grade => `
+                <div style="margin-bottom:12px;">
+                    <div style="font-weight:700; font-size:0.75rem; color:var(--blue); margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:4px;">Grade ${grade}</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; padding-left:8px;">
+                        ${subjectsByGrade[grade].map(s => `<label><input type="checkbox" value="${s.id}" ${u.subjects.includes(s.id)?'checked':''} class="editSubChk"> ${esc(s.name)}</label>`).join('')}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    </div>`;
+}
+  
   html += `
     <div class="modal-field"><label>Reset Password</label><button class="btn btn-amber btn-sm" onclick="resetUserPassword(${u.id})">Set to default (123)</button></div>
     <div class="modal-footer">
@@ -1303,7 +1767,14 @@ function addSubject() {
   const grade = parseInt($('m_subjectGrade').value);
   DB.subjects.push({ id: newId(), name, grade, schoolId: currentUser.schoolId });
   closeModal();
-  navigateTo('subjects');
+  
+  // Refresh the subjects tab if we're on it
+  if (activeTab === 'subjects') {
+    const c = document.getElementById('pageContent');
+    renderSchoolAdmin(c);
+  } else {
+    navigateTo('subjects');
+  }
 }
 
 function openAddAssessmentModal() {
@@ -1313,13 +1784,175 @@ function openAddAssessmentModal() {
     <div class="modal-field"><label>Subject</label><select id="m_assessSubject">${subjects.map(s=>`<option value="${s.id}">${esc(s.name)} (G${s.grade})</option>`).join('')}</select></div>
     <div class="modal-field"><label>Name</label><input type="text" id="m_assessName" placeholder="e.g. Test 1"></div>
     <div class="modal-field"><label>Term</label><select id="m_assessTerm"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
-    <div class="modal-field"><label>Total Marks</label><input type="number" id="m_assessMarks" value="50" min="1"></div>
+    <div class="modal-field"><label>Total Marks</label><input type="number" id="m_assessMarks" value="50" min="1" onchange="updateQuestionsTotal()"></div>
     <div class="modal-field"><label>Weight (%)</label><input type="number" id="m_assessWeight" value="30" min="1" max="100"></div>
     <div class="modal-field"><label>Type</label><select id="m_assessType"><option>Test</option><option>Exam</option><option>Assignment</option></select></div>
+    
+    <hr class="divider">
+    <div style="font-weight:700; font-size:0.8rem; margin-bottom:0.5rem; display: flex; justify-content: space-between; align-items: center;">
+      <span>Questions</span>
+      <span id="questionsTotalDisplay" style="font-size:0.7rem; color: var(--ink-3);">Total: 0 / 0 marks</span>
+    </div>
+    <div id="newQuestionsContainer">
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px">
+        <input type="text" placeholder="Q1" class="form-control newQName" style="width:60px" onkeyup="updateQuestionsTotal()">
+        <input type="number" placeholder="Marks" class="form-control newQMarks" style="width:70px" min="1" onchange="updateQuestionsTotal()" onkeyup="updateQuestionsTotal()">
+        <input type="text" placeholder="Topic" class="form-control newQTopic" style="width:120px">
+      </div>
+    </div>
+    <button class="btn btn-sm btn-secondary" onclick="addNewQuestionRow()"><i class="fas fa-plus"></i> Add Question</button>
+    <div id="questionsWarning" style="display:none; margin-top:8px; padding:8px; background:var(--red-light); border-radius:6px; font-size:0.7rem; color:var(--red);">
+      <i class="fas fa-exclamation-triangle"></i> Question marks total does not match assessment total marks
+    </div>
+    
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="addAssessment()">Add</button>
+      <button class="btn btn-primary" onclick="addAssessmentWithQuestions()">Add Assessment</button>
     </div>`);
+}
+
+function updateQuestionsTotal() {
+  const rows = document.querySelectorAll('#newQuestionsContainer > div');
+  let total = 0;
+  rows.forEach(row => {
+    const marks = parseInt(row.querySelector('.newQMarks')?.value) || 0;
+    total += marks;
+  });
+  const assessmentTotal = parseInt($('m_assessMarks')?.value) || 0;
+  const display = document.getElementById('questionsTotalDisplay');
+  const warning = document.getElementById('questionsWarning');
+  
+  if (display) {
+    display.textContent = `Total: ${total} / ${assessmentTotal} marks`;
+    if (total !== assessmentTotal && rows.length > 0) {
+      display.style.color = 'var(--red)';
+      if (warning) warning.style.display = 'block';
+    } else {
+      display.style.color = total === assessmentTotal ? 'var(--green)' : 'var(--ink-3)';
+      if (warning) warning.style.display = 'none';
+    }
+  }
+}
+
+function addNewQuestionRow() {
+  const container = document.getElementById('newQuestionsContainer');
+  if (!container) return;
+  
+  // Count existing question rows
+  const existingRows = container.querySelectorAll('div');
+  const nextNumber = existingRows.length + 1;
+  
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:6px';
+  row.innerHTML = `
+    <input type="text" value="Q${nextNumber}" class="form-control newQName" style="width:60px" readonly onfocus="this.removeAttribute('readonly')" onkeyup="updateQuestionsTotal()">
+    <input type="number" placeholder="Marks" class="form-control newQMarks" style="width:70px" min="1" onchange="updateQuestionsTotal()" onkeyup="updateQuestionsTotal()">
+    <input type="text" placeholder="Topic" class="form-control newQTopic" style="width:120px">
+    <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove(); updateQuestionsTotal(); renumberQuestions()">X</button>
+  `;
+  container.appendChild(row);
+  updateQuestionsTotal();
+}
+
+function renumberQuestions() {
+  const container = document.getElementById('newQuestionsContainer');
+  if (!container) return;
+  const rows = container.querySelectorAll('div');
+  rows.forEach((row, index) => {
+    const nameInput = row.querySelector('.newQName');
+    if (nameInput) {
+      nameInput.value = `Q${index + 1}`;
+    }
+  });
+  updateQuestionsTotal();
+}
+
+function addAssessmentWithQuestions() {
+  const subjectId = parseInt($('m_assessSubject').value);
+  const name = $('m_assessName').value.trim();
+  if (!name) { alert('Assessment name required.'); return; }
+  const term = parseInt($('m_assessTerm').value);
+  const totalMarks = parseInt($('m_assessMarks').value);
+  const weight = parseInt($('m_assessWeight').value);
+  const type = $('m_assessType').value;
+  
+  // Collect questions
+  const rows = document.querySelectorAll('#newQuestionsContainer > div');
+  const questions = [];
+  let questionsTotalMarks = 0;
+  
+  rows.forEach(row => {
+    const qName = row.querySelector('.newQName').value.trim();
+    const qMarks = parseInt(row.querySelector('.newQMarks').value) || 0;
+    const qTopic = row.querySelector('.newQTopic').value.trim() || 'General';
+    if (qName) {
+      questions.push({ name: qName, marks: qMarks, topic: qTopic });
+      questionsTotalMarks += qMarks;
+    }
+  });
+  
+  // STRICT VALIDATION: Must have at least one question
+  if (questions.length === 0) {
+    alert('Please add at least one question to the assessment.');
+    return;
+  }
+  
+  // STRICT VALIDATION: Question marks must equal total marks
+  if (questionsTotalMarks !== totalMarks) {
+    alert(`❌ Question marks total (${questionsTotalMarks}) does NOT equal assessment total marks (${totalMarks}).\n\nPlease adjust your question marks or assessment total marks.`);
+    return;
+  }
+  
+  // Create assessment
+  const newAssessment = { 
+    id: newId(), 
+    subjectId, 
+    name, 
+    term, 
+    totalMarks, 
+    weight, 
+    type 
+  };
+  DB.assessments.push(newAssessment);
+  
+  // Add questions
+  questions.forEach(q => {
+    DB.questions.push({ 
+      id: newId(), 
+      assessmentId: newAssessment.id, 
+      name: q.name, 
+      marks: q.marks, 
+      topic: q.topic 
+    });
+  });
+  
+  closeModal();
+  
+  // Refresh based on current tab
+  if (activeTab === 'assessments') {
+    renderAssessmentsList();
+  } else if (activeTab === 'subjects') {
+    // Force refresh the subject tree
+    const schoolId = currentUser.schoolId;
+    const gradeFilter = adminGradeFilter;
+    const subjectTree = document.getElementById('subjectTree');
+    if (subjectTree) {
+      subjectTree.innerHTML = renderSubjectTree(schoolId, gradeFilter);
+    } else {
+      // If subject tree element doesn't exist, reload the whole page
+      const c = document.getElementById('pageContent');
+      renderSchoolAdmin(c);
+    }
+  } else {
+    navigateTo('assessments');
+  }
+  
+  // Show success message
+  const msg = document.createElement('div');
+  msg.textContent = `✓ Assessment "${name}" added with ${questions.length} questions (${questionsTotalMarks}/${totalMarks} marks)`;
+  msg.style.cssText = 'position:fixed; bottom:20px; right:20px; background:var(--green); color:white; padding:8px 16px; border-radius:8px; z-index:1000; font-size:0.8rem;';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
 }
 
 function addAssessment() {
@@ -1330,79 +1963,298 @@ function addAssessment() {
   const totalMarks = parseInt($('m_assessMarks').value);
   const weight = parseInt($('m_assessWeight').value);
   const type = $('m_assessType').value;
-  DB.assessments.push({ id: newId(), subjectId, name, term, totalMarks, weight, type });
+  
+  // Add the new assessment
+  const newAssessment = { id: newId(), subjectId, name, term, totalMarks, weight, type };
+  DB.assessments.push(newAssessment);
+  
   closeModal();
-  navigateTo('assessments');
+  
+  // Refresh the current view
+  if (activeTab === 'assessments') {
+    renderAssessmentsList();
+  } else {
+    // If not on assessments tab, navigate there
+    navigateTo('assessments');
+  }
 }
 
-function openEditAssessmentModal(assId) {
-  const ass = DB.assessments.find(a => a.id === assId);
-  if (!ass) return;
-  const subjects = DB.subjects.filter(s => s.schoolId === currentUser.schoolId);
-  const qs = getQuestionsByAssessment(assId);
-  openModal(`
-    <div class="modal-title">Edit Assessment</div>
-    <div class="modal-field"><label>Subject</label><select id="m_editAssessSubject">${subjects.map(s=>`<option value="${s.id}" ${s.id===ass.subjectId?'selected':''}>${esc(s.name)} (G${s.grade})</option>`).join('')}</select></div>
-    <div class="modal-field"><label>Name</label><input type="text" id="m_editAssessName" value="${esc(ass.name)}"></div>
-    <div class="modal-field"><label>Term</label><select id="m_editAssessTerm">${[1,2,3,4].map(t=>`<option value="${t}" ${ass.term===t?'selected':''}>${t}</option>`).join('')}</select></div>
-    <div class="modal-field"><label>Total Marks</label><input type="number" id="m_editAssessMarks" value="${ass.totalMarks}" min="1"></div>
-    <div class="modal-field"><label>Weight (%)</label><input type="number" id="m_editAssessWeight" value="${ass.weight}" min="1" max="100"></div>
-    <div class="modal-field"><label>Type</label><select id="m_editAssessType">${['Test','Exam','Assignment'].map(t=>`<option value="${t}" ${ass.type===t?'selected':''}>${t}</option>`).join('')}</select></div>
-    <hr class="divider">
-    <div style="font-weight:700; font-size:0.8rem; margin-bottom:0.5rem">Questions</div>
-    <div id="editQuestionsContainer">
-      ${qs.map((q,i) => `
-        <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px">
-          <input type="text" value="${esc(q.name)}" style="width:60px" placeholder="Q1" class="form-control editQName">
-          <input type="number" value="${q.marks}" style="width:60px" placeholder="Marks" class="form-control editQMarks" min="1">
-          <input type="text" value="${esc(q.topic)}" style="width:100px" placeholder="Topic" class="form-control editQTopic">
-          <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove()">X</button>
-        </div>`).join('')}
-    </div>
-    <button class="btn btn-sm btn-secondary" onclick="addQuestionRow()"><i class="fas fa-plus"></i> Add Question</button>
-    <div class="modal-footer">
-      <button class="btn btn-danger" onclick="deleteAssessment(${assId}); closeModal()">Delete Assessment</button>
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveAssessmentEdit(${assId})">Save Changes</button>
-    </div>`);
-}
-
-function addQuestionRow() {
+function updateEditQuestionsTotal() {
   const container = document.getElementById('editQuestionsContainer');
   if (!container) return;
+  
+  const rows = container.querySelectorAll('div');
+  let total = 0;
+  rows.forEach(row => {
+    const marks = parseInt(row.querySelector('.editQMarks')?.value) || 0;
+    total += marks;
+  });
+  const assessmentTotal = parseInt($('m_editAssessMarks')?.value) || 0;
+  const display = document.getElementById('editQuestionsTotalDisplay');
+  const warning = document.getElementById('editQuestionsWarning');
+  
+  if (display) {
+    display.textContent = `Total: ${total} / ${assessmentTotal} marks`;
+    if (total !== assessmentTotal && rows.length > 0) {
+      display.style.color = 'var(--red)';
+      if (warning) warning.style.display = 'block';
+    } else {
+      display.style.color = total === assessmentTotal ? 'var(--green)' : 'var(--ink-3)';
+      if (warning) warning.style.display = 'none';
+    }
+  }
+}
+
+function addEditQuestionRow() {
+  const container = document.getElementById('editQuestionsContainer');
+  if (!container) return;
+  
+  // Count existing question rows
+  const existingRows = container.querySelectorAll('div');
+  const nextNumber = existingRows.length + 1;
+  
   const row = document.createElement('div');
   row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:6px';
-  row.innerHTML = `<input type="text" style="width:60px" placeholder="Q1" class="form-control editQName">
-    <input type="number" style="width:60px" placeholder="Marks" class="form-control editQMarks" min="1">
-    <input type="text" style="width:100px" placeholder="Topic" class="form-control editQTopic">
-    <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove()">X</button>`;
+  row.innerHTML = `
+    <input type="text" value="Q${nextNumber}" class="form-control editQName" style="width:60px" onkeyup="updateEditQuestionsTotal()">
+    <input type="number" placeholder="Marks" class="form-control editQMarks" style="width:70px" min="1" onchange="updateEditQuestionsTotal()" onkeyup="updateEditQuestionsTotal()">
+    <input type="text" placeholder="Topic" class="form-control editQTopic" style="width:120px">
+    <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove(); updateEditQuestionsTotal(); renumberEditQuestions()">X</button>
+  `;
   container.appendChild(row);
+  updateEditQuestionsTotal();
+}
+
+function renumberEditQuestions() {
+  const container = document.getElementById('editQuestionsContainer');
+  if (!container) return;
+  const rows = container.querySelectorAll('div');
+  rows.forEach((row, index) => {
+    const nameInput = row.querySelector('.editQName');
+    if (nameInput && !nameInput.value.trim().startsWith('Q')) {
+      nameInput.value = `Q${index + 1}`;
+    } else if (nameInput && nameInput.value.trim() === '') {
+      nameInput.value = `Q${index + 1}`;
+    }
+  });
+  updateEditQuestionsTotal();
+}
+
+function updateEditQuestionsTotal() {
+  const container = document.getElementById('editQuestionsContainer');
+  if (!container) return;
+  
+  const rows = container.querySelectorAll('div');
+  let total = 0;
+  rows.forEach(row => {
+    const marks = parseInt(row.querySelector('.editQMarks')?.value) || 0;
+    total += marks;
+  });
+  const assessmentTotal = parseInt($('m_editAssessMarks')?.value) || 0;
+  const display = document.getElementById('editQuestionsTotalDisplay');
+  const warning = document.getElementById('editQuestionsWarning');
+  
+  if (display) {
+    display.textContent = `Total: ${total} / ${assessmentTotal} marks`;
+    if (total !== assessmentTotal && rows.length > 0) {
+      display.style.color = 'var(--red)';
+      if (warning) warning.style.display = 'block';
+    } else {
+      display.style.color = total === assessmentTotal ? 'var(--green)' : 'var(--ink-3)';
+      if (warning) warning.style.display = 'none';
+    }
+  }
+}
+
+function addEditQuestionRow() {
+  const container = document.getElementById('editQuestionsContainer');
+  if (!container) return;
+  
+  // Count existing question rows
+  const existingRows = container.querySelectorAll('div');
+  const nextNumber = existingRows.length + 1;
+  
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:6px';
+  row.innerHTML = `
+    <input type="text" value="Q${nextNumber}" class="form-control editQName" style="width:60px" onkeyup="updateEditQuestionsTotal()">
+    <input type="number" placeholder="Marks" class="form-control editQMarks" style="width:70px" min="1" onchange="updateEditQuestionsTotal()" onkeyup="updateEditQuestionsTotal()">
+    <input type="text" placeholder="Topic" class="form-control editQTopic" style="width:120px">
+    <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove(); updateEditQuestionsTotal(); renumberEditQuestions()">X</button>
+  `;
+  container.appendChild(row);
+  updateEditQuestionsTotal();
+}
+
+function renumberEditQuestions() {
+  const container = document.getElementById('editQuestionsContainer');
+  if (!container) return;
+  const rows = container.querySelectorAll('div');
+  rows.forEach((row, index) => {
+    const nameInput = row.querySelector('.editQName');
+    if (nameInput && !nameInput.value.trim().startsWith('Q')) {
+      nameInput.value = `Q${index + 1}`;
+    } else if (nameInput && nameInput.value.trim() === '') {
+      nameInput.value = `Q${index + 1}`;
+    }
+  });
+  updateEditQuestionsTotal();
 }
 
 function saveAssessmentEdit(assId) {
   const ass = DB.assessments.find(a => a.id === assId);
   if (!ass) return;
-  ass.subjectId = parseInt($('m_editAssessSubject').value);
-  ass.name = $('m_editAssessName').value.trim();
-  ass.term = parseInt($('m_editAssessTerm').value);
-  ass.totalMarks = parseInt($('m_editAssessMarks').value);
-  ass.weight = parseInt($('m_editAssessWeight').value);
-  ass.type = $('m_editAssessType').value;
+  
+  const newSubjectId = parseInt($('m_editAssessSubject').value);
+  const newName = $('m_editAssessName').value.trim();
+  const newTerm = parseInt($('m_editAssessTerm').value);
+  const newTotalMarks = parseInt($('m_editAssessMarks').value);
+  const newWeight = parseInt($('m_editAssessWeight').value);
+  const newType = $('m_editAssessType').value;
+  
+  // Collect questions from edit modal
   const container = document.getElementById('editQuestionsContainer');
+  const questions = [];
+  let questionsTotalMarks = 0;
+  
+  if (container) {
+    const rows = container.querySelectorAll('div');
+    for (let row of rows) {
+      const name = row.querySelector('.editQName')?.value.trim();
+      const marks = parseInt(row.querySelector('.editQMarks')?.value) || 0;
+      const topic = row.querySelector('.editQTopic')?.value.trim() || 'General';
+      if (name) {
+        // Skip empty question names
+        if (name === '') continue;
+        questions.push({ name, marks, topic });
+        questionsTotalMarks += marks;
+      }
+    }
+  }
+  
+  // STRICT VALIDATION: Must have at least one question
+  if (questions.length === 0) {
+    alert('Please add at least one question to the assessment.');
+    return;
+  }
+  
+  // STRICT VALIDATION: Question marks must equal total marks
+  if (questionsTotalMarks !== newTotalMarks) {
+    alert(`❌ Question marks total (${questionsTotalMarks}) does NOT equal assessment total marks (${newTotalMarks}).\n\nPlease adjust your question marks or assessment total marks.`);
+    return;
+  }
+  
+  // Update assessment
+  ass.subjectId = newSubjectId;
+  ass.name = newName;
+  ass.term = newTerm;
+  ass.totalMarks = newTotalMarks;
+  ass.weight = newWeight;
+  ass.type = newType;
+  
+  // Update questions
   if (container) {
     DB.questions = DB.questions.filter(q => q.assessmentId !== assId);
-    const rows = container.querySelectorAll('div');
-    rows.forEach(row => {
-      const name = row.querySelector('.editQName').value.trim();
-      const marks = parseInt(row.querySelector('.editQMarks').value) || 1;
-      const topic = row.querySelector('.editQTopic').value.trim();
-      if (name) {
-        DB.questions.push({ id: newId(), assessmentId: assId, name, marks, topic });
-      }
+    questions.forEach(q => {
+      DB.questions.push({ id: newId(), assessmentId: assId, name: q.name, marks: q.marks, topic: q.topic });
     });
   }
+  
   closeModal();
-  navigateTo('assessments');
+  
+  // Refresh the current view
+  if (activeTab === 'assessments') {
+    renderAssessmentsList();
+  } else if (activeTab === 'subjects') {
+    navigateTo('subjects');
+  } else {
+    navigateTo('assessments');
+  }
+  
+  // Show success message
+  const msg = document.createElement('div');
+  msg.textContent = `✓ Assessment "${newName}" updated with ${questions.length} questions (${questionsTotalMarks}/${newTotalMarks} marks)`;
+  msg.style.cssText = 'position:fixed; bottom:20px; right:20px; background:var(--green); color:white; padding:8px 16px; border-radius:8px; z-index:1000; font-size:0.8rem;';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
+}
+
+function addAssessmentWithQuestions() {
+  const subjectId = parseInt($('m_assessSubject').value);
+  const name = $('m_assessName').value.trim();
+  if (!name) { alert('Assessment name required.'); return; }
+  const term = parseInt($('m_assessTerm').value);
+  const totalMarks = parseInt($('m_assessMarks').value);
+  const weight = parseInt($('m_assessWeight').value);
+  const type = $('m_assessType').value;
+  
+  // Collect questions
+  const rows = document.querySelectorAll('#newQuestionsContainer > div');
+  const questions = [];
+  let questionsTotalMarks = 0;
+  
+  rows.forEach(row => {
+    const qName = row.querySelector('.newQName').value.trim();
+    const qMarks = parseInt(row.querySelector('.newQMarks').value) || 0;
+    const qTopic = row.querySelector('.newQTopic').value.trim() || 'General';
+    if (qName) {
+      questions.push({ name: qName, marks: qMarks, topic: qTopic });
+      questionsTotalMarks += qMarks;
+    }
+  });
+  
+  // STRICT VALIDATION: Must have at least one question
+  if (questions.length === 0) {
+    alert('Please add at least one question to the assessment.');
+    return;
+  }
+  
+  // STRICT VALIDATION: Question marks must equal total marks
+  if (questionsTotalMarks !== totalMarks) {
+    alert(`❌ Question marks total (${questionsTotalMarks}) does NOT equal assessment total marks (${totalMarks}).\n\nPlease adjust your question marks or assessment total marks.`);
+    return;
+  }
+  
+  // Create assessment
+  const newAssessment = { 
+    id: newId(), 
+    subjectId, 
+    name, 
+    term, 
+    totalMarks, 
+    weight, 
+    type 
+  };
+  DB.assessments.push(newAssessment);
+  
+  // Add questions
+  questions.forEach(q => {
+    DB.questions.push({ 
+      id: newId(), 
+      assessmentId: newAssessment.id, 
+      name: q.name, 
+      marks: q.marks, 
+      topic: q.topic 
+    });
+  });
+  
+  closeModal();
+  
+  // Refresh the current view
+  if (activeTab === 'assessments') {
+    renderAssessmentsList();
+  } else if (activeTab === 'subjects') {
+    navigateTo('subjects');
+  } else {
+    navigateTo('assessments');
+  }
+  
+  // Show success message
+  const msg = document.createElement('div');
+  msg.textContent = `✓ Assessment "${name}" added with ${questions.length} questions (${questionsTotalMarks}/${totalMarks} marks)`;
+  msg.style.cssText = 'position:fixed; bottom:20px; right:20px; background:var(--green); color:white; padding:8px 16px; border-radius:8px; z-index:1000; font-size:0.8rem;';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
 }
 
 function deleteAssessment(assId) {
@@ -1466,24 +2318,36 @@ function renderTeacher(c) {
   const defaultGrade = teacherState.gradeFilter || teacherGrades[0] || 11;
 
   if (activeTab === 'dashboard') {
+    // MOVED THESE INSIDE - they were missing!
     const learners = getLearners(schoolId, defaultGrade);
     const atRisk = learners.filter(l => calcOverallAverage(l.id) < 50).length;
     const myInterventions = DB.interventions.filter(i => i.teacherId === currentUser.id);
     const teacherSubjects = getTeacherSubjectsForGrade(defaultGrade);
+    
     c.innerHTML = `
       <div class="page-hero">
         <h2>Welcome, ${esc(currentUser.name)}</h2>
-        <p>Educator Dashboard — ${esc(getSchool(schoolId)?.name || '')} | Assigned grades: ${teacherGrades.join(', ')}
-          <select style="margin-left:8px; padding:2px 8px; border-radius:6px; background:white; color:var(--ink); font-weight:600" onchange="teacherState.gradeFilter=parseInt(this.value); navigateTo('dashboard')">
-            ${teacherGrades.map(g => `<option value="${g}" ${defaultGrade===g?'selected':''}>Grade ${g}</option>`).join('')}
-          </select>
-        </p>
+        <p>Educator Dashboard — ${esc(getSchool(schoolId)?.name || '')} | Assigned grades: ${teacherGrades.join(', ')}</p>
         <div class="hero-stats">
           <div><div class="hero-stat-val">${learners.length}</div><div class="hero-stat-label">Students (G${defaultGrade})</div></div>
           <div><div class="hero-stat-val">${atRisk}</div><div class="hero-stat-label">At Risk</div></div>
           <div><div class="hero-stat-val">${myInterventions.length}</div><div class="hero-stat-label">Interventions</div></div>
         </div>
       </div>
+      
+      <div style="background: white; border-radius: var(--radius-lg); padding: 0.75rem 1.25rem; margin-bottom: 1.5rem; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="font-weight: 600; font-size: 0.8rem; color: var(--ink-2);">
+          <i class="fas fa-filter"></i> Filter by Grade:
+        </div>
+        <div class="flex-gap">
+          ${teacherGrades.map(g => `
+            <button class="grade-tab ${defaultGrade === g ? 'active' : ''}" onclick="teacherState.gradeFilter = ${g}; navigateTo('dashboard')" style="padding: 6px 16px;">
+              Grade ${g}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+      
       <div class="stats-row">
         ${teacherSubjects.map(s => {
           const avg = learners.reduce((acc, l) => acc + calcSubjectAverage(l.id, s.id), 0) / (learners.length || 1);
@@ -1493,8 +2357,6 @@ function renderTeacher(c) {
           </div>`;
         }).join('')}
       </div>`;
- 
-
   } else if (activeTab === 'marks') {
     const grade = teacherState.gradeFilter || defaultGrade;
     const teacherSubjects = getTeacherSubjectsForGrade(grade);
@@ -1522,9 +2384,12 @@ function renderTeacher(c) {
             <select class="form-control" id="markAssessSel" onchange="onMarkAssessChange()">
               ${firstAssessments.map(a => `<option value="${a.id}">${esc(a.name)} (T${a.term})</option>`).join('')}
             </select>
+            <select class="form-control" id="markGradeSel" onchange="onMarkGradeChange()">
+              ${teacherGrades.map(g => `<option value="${g}" ${g === grade ? 'selected' : ''}>Grade ${g}</option>`).join('')}
+            </select>
           </div>
           <div class="tbl-wrap">
-            <table>
+            <table style="width:100%">
               <thead id="markTableHead"></thead>
               <tbody id="markTable"></tbody>
             </table>
@@ -1535,191 +2400,185 @@ function renderTeacher(c) {
         </div>
       </div>`;
     buildMarkTable();
-  }
+  } else if (activeTab === 'risk') {
+    const grade = teacherState.gradeFilter || defaultGrade;
+    const learners = getLearners(currentUser.schoolId, grade);
+    const teacherSubjects = getTeacherSubjectsForGrade(grade);
+    
+    const selectedSubjectId = teacherState.subjectId || (teacherSubjects[0]?.id || null);
+    
+    let filteredLearners = learners;
+    let subjectAvgMap = {};
+    
+    if (selectedSubjectId) {
+      filteredLearners = learners.filter(l => {
+        const avg = calcSubjectAverage(l.id, selectedSubjectId);
+        subjectAvgMap[l.id] = avg;
+        return avg < 70;
+      });
+    }
 
- else if (activeTab === 'risk') {
-  const grade = teacherState.gradeFilter || defaultGrade;
-  const learners = getLearners(currentUser.schoolId, grade);
-  const teacherSubjects = getTeacherSubjectsForGrade(grade);
+    const learnerData = filteredLearners.map(l => ({
+      learner: l,
+      overall: calcOverallAverage(l.id),
+      subjectAvg: selectedSubjectId ? subjectAvgMap[l.id] : null
+    }));
 
-  const learnerData = learners.map(l => ({
-    learner: l,
-    overall: calcOverallAverage(l.id),
-    subjects: teacherSubjects.map(sub => ({
-      subject: sub,
-      avg: calcSubjectAverage(l.id, sub.id)
-    }))
-  }));
-
-  const overallGroups = { good: [], moderate: [], atrisk: [], critical: [] };
-  learnerData.forEach(d => {
-    const o = d.overall;
-    if (o >= 65) overallGroups.good.push(d);
-    else if (o >= 50) overallGroups.moderate.push(d);
-    else if (o >= 26) overallGroups.atrisk.push(d);
-    else overallGroups.critical.push(d);
-  });
-
-  // Build subject risk data
-  const subjectRisk = {};
-  teacherSubjects.forEach(sub => {
-    const riskLevels = { moderate: [], atrisk: [], critical: [] };
+    const overallGroups = { critical: [], atrisk: [], moderate: [], good: [] };
     learnerData.forEach(d => {
-      const subData = d.subjects.find(s => s.subject.id === sub.id);
-      if (!subData) return;
-      const avg = subData.avg;
-      if (avg < 65) {
-        const level = avg >= 50 ? 'moderate' : (avg >= 26 ? 'atrisk' : 'critical');
-        riskLevels[level].push({ learner: d.learner, avg });
-      }
+      const o = d.overall;
+      if (o >= 70) overallGroups.good.push(d);
+      else if (o >= 50) overallGroups.moderate.push(d);
+      else if (o >= 30) overallGroups.atrisk.push(d);
+      else overallGroups.critical.push(d);
     });
-    const hasRisk = Object.values(riskLevels).some(arr => arr.length > 0);
-    if (hasRisk) subjectRisk[sub.id] = { subject: sub, riskLevels };
-  });
 
-  c.innerHTML = `
-    <div style="margin-bottom:1rem">
-      <label style="font-weight:600; margin-right:8px">Grade filter:</label>
-      <select class="form-control" onchange="teacherState.gradeFilter=parseInt(this.value); navigateTo('risk')">
-        ${teacherGrades.map(g => `<option value="${g}" ${g===grade?'selected':''}>Grade ${g}</option>`).join('')}
-      </select>
-    </div>
-
-    <!-- COLLAPSIBLE: Overall Risk Summary -->
-    <div class="card">
-      <div class="card-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')" style="cursor:pointer;">
-        <div class="card-title"><i class="fas fa-chevron-right chevron"></i> Overall Risk Summary</div>
-        <span class="text-muted">${learnerData.length} learners</span>
-      </div>
-      <div class="card-body tree-children open">
-        ${['good','moderate','atrisk','critical'].map(cat => {
-          const data = overallGroups[cat];
-          if (!data.length) return '';
-          const headerColor = { good: '#16a34a', moderate: '#85B830', atrisk: '#d97706', critical: '#dc2626' }[cat];
-          const label = { good: 'Good (≥65%)', moderate: 'Moderate (50–64%)', atrisk: 'At Risk (26–49%)', critical: 'Critical (<26%)' }[cat];
-          return `<div style="margin-bottom:1.2rem;">
-            <div style="font-weight:700; color:${headerColor}; margin-bottom:0.3rem;">${label} (${data.length})</div>
-            ${data.map(d => `
-              <div class="risk-learner-row" style="margin-bottom:0.4rem; padding:0.4rem 0.6rem; border-radius:6px; background:#f8fafc;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                  <div class="dir-avatar" style="background:${progColor(d.overall)}; width:28px; height:28px; font-size:0.7rem;">${avatarChar(d.learner.name)}</div>
-                  <div>
-                    <div style="font-weight:600; font-size:0.8rem;">${esc(d.learner.name)}</div>
-                    <div class="text-muted" style="font-size:0.7rem;">Grade ${d.learner.grade}</div>
-                  </div>
-                </div>
-                <div style="text-align:right;">
-                  <div style="font-weight:700; color:${progColor(d.overall)}; font-size:0.85rem;">${Math.round(d.overall)}%</div>
-                  ${riskBadge(d.overall)}
-                </div>
-              </div>
-            `).join('')}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
-
-    <!-- COLLAPSIBLE: Subject Risk Analysis (each subject now collapsible) -->
-    <div class="card">
-      <div class="card-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')" style="cursor:pointer;">
-        <div class="card-title"><i class="fas fa-chevron-right chevron"></i> Subject Risk Analysis</div>
-        <span class="text-muted">${Object.keys(subjectRisk).length} subjects with risk</span>
-      </div>
-      <div class="card-body tree-children open">
-        ${Object.values(subjectRisk).map(sr => `
-          <!-- Each subject is a collapsible block -->
-          <div style="margin-bottom:1.5rem;">
-            <div class="card-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')" style="cursor:pointer; padding:0.5rem 0.75rem; background:#f1f5f9; border-radius:8px;">
-              <div style="display:flex; align-items:center; justify-content:space-between;">
-                <span style="font-weight:700; color:var(--blue);">${esc(sr.subject.name)} (Grade ${sr.subject.grade})</span>
-                <i class="fas fa-chevron-right chevron" style="transition:transform 0.2s;"></i>
-              </div>
-            </div>
-            <div class="tree-children" style="margin-top:0.5rem;">
-              ${['moderate','atrisk','critical'].map(level => {
-                const learners = sr.riskLevels[level];
-                if (!learners.length) return '';
-                const headerColor = { moderate: '#85B830', atrisk: '#d97706', critical: '#dc2626' }[level];
-                const label = { moderate: 'Moderate (50–64%)', atrisk: 'At Risk (26–49%)', critical: 'Critical (<26%)' }[level];
-                return `<div style="margin-bottom:0.8rem;">
-                  <div style="font-weight:600; font-size:0.75rem; color:${headerColor}; margin-bottom:0.2rem;">${label}</div>
-                  <div class="tbl-wrap">
-                    <table style="font-size:0.78rem; width:100%">
-                      <thead><tr><th>Learner</th><th>Subject Avg</th><th></th></tr></thead>
-                      <tbody>
-                        ${learners.map(l => `
-                          <tr>
-                            <td>${esc(l.learner.name)}</td>
-                            <td style="color:${progColor(l.avg)}; font-weight:700;">${Math.round(l.avg)}%</td>
-                            <td style="text-align:right;">
-                              <button class="btn btn-xs btn-primary" onclick="openInterventionModal(${l.learner.id})"><i class="fas fa-hand-holding-heart"></i> Intervene</button>
-                            </td>
-                          </tr>
-                        `).join('')}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>`;
-              }).join('')}
-            </div>
+    c.innerHTML = `
+      <div style="margin-bottom:1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label style="font-weight:600; font-size:0.8rem;">Grade:</label>
+            <select class="form-control" style="width: auto;" onchange="teacherState.gradeFilter=parseInt(this.value); teacherState.subjectId = null; navigateTo('risk')">
+              ${teacherGrades.map(g => `<option value="${g}" ${g===grade?'selected':''}>Grade ${g}</option>`).join('')}
+            </select>
           </div>
-        `).join('')}
-        ${Object.keys(subjectRisk).length === 0 ? '<div class="empty-state"><p>No subject risk detected for this grade.</p></div>' : ''}
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label style="font-weight:600; font-size:0.8rem;">Subject:</label>
+            <select class="form-control" style="width: auto;" onchange="teacherState.subjectId=parseInt(this.value) || null; navigateTo('risk')">
+              <option value="">All Subjects</option>
+              ${teacherSubjects.map(s => `<option value="${s.id}" ${selectedSubjectId === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="refreshRiskAnalysis()">
+          <i class="fas fa-sync-alt"></i> Refresh Risk Data
+        </button>
       </div>
-    </div>
 
-    <!-- My Submitted Interventions -->
-    <div class="card" style="margin-top:0">
-      <div class="card-header"><div class="card-title">My Submitted Interventions</div></div>
-      <div class="card-body" id="myIntervList"></div>
-    </div>`;
+      <div class="card">
+        <div class="card-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open')" style="cursor:pointer;">
+          <div class="card-title"><i class="fas fa-chevron-right chevron"></i> Overall Risk Summary</div>
+          <span class="text-muted">${learnerData.length} learners</span>
+        </div>
+        <div class="card-body tree-children open">
+          ${Object.keys(overallGroups).map(cat => {
+            const data = overallGroups[cat];
+            if (!data.length) return '';
+            const headerColor = { critical: '#dc2626', atrisk: '#d97706', moderate: '#85B830', good: '#16a34a' }[cat];
+            const label = { critical: 'Critical (<30%)', atrisk: 'At Risk (30–49%)', moderate: 'Moderate (50–69%)', good: 'Good (≥70%)' }[cat];
+            return `<div style="margin-bottom:1.2rem;">
+              <div style="font-weight:700; color:${headerColor}; margin-bottom:0.3rem;">${label} (${data.length})</div>
+              ${data.map(d => {
+                const showInterveneButton = (cat === 'atrisk' || cat === 'critical');
+                return `
+                <div class="risk-learner-row" style="margin-bottom:0.4rem; padding:0.4rem 0.6rem; border-radius:6px; background:#f8fafc;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <div class="dir-avatar" style="background:${progColor(d.overall)}; width:28px; height:28px; font-size:0.7rem;">${avatarChar(d.learner.name)}</div>
+                      <div>
+                        <div style="font-weight:600; font-size:0.8rem;">${esc(d.learner.name)}</div>
+                        <div class="text-muted" style="font-size:0.7rem;">Grade ${d.learner.grade}</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right;">
+                      ${selectedSubjectId ? `<div style="font-size:0.7rem; color:${progColor(d.subjectAvg)}">Subject: ${Math.round(d.subjectAvg)}%</div>` : ''}
+                      <div style="font-weight:700; color:${progColor(d.overall)}; font-size:0.85rem;">Overall: ${Math.round(d.overall)}%</div>
+                      ${riskBadge(d.overall)}
+                    </div>
+                  </div>
+                  ${showInterveneButton ? `
+                  <div style="margin-top:8px;">
+                    <button class="btn btn-primary btn-sm" onclick="openInterventionModal(${d.learner.id})"><i class="fas fa-hand-holding-heart"></i> Intervene</button>
+                  </div>
+                  ` : ''}
+                </div>
+              `;
+              }).join('')}
+            </div>`;
+          }).join('')}
+          ${learnerData.length === 0 ? '<div class="empty-state"><p>No learners match the selected filters.</p></div>' : ''}
+        </div>
+      </div>
 
-  buildMyInterventions();
-}
-
-
-
-
-
-  
-else if (activeTab === 'attendance') {
+      <div class="card" style="margin-top:0">
+        <div class="card-header"><div class="card-title">My Submitted Interventions</div></div>
+        <div class="card-body" id="myIntervList"></div>
+      </div>`;
+    buildMyInterventions();
+  } else if (activeTab === 'attendance') {
     const today = new Date().toISOString().split('T')[0];
     const grade = teacherState.gradeFilter || defaultGrade;
     const subjects = getTeacherSubjectsForGrade(grade);
-    if (!subjects.length) { c.innerHTML = '<div class="empty-state"><p>No subjects for this grade.</p></div>'; return; }
+    if (!subjects.length) { 
+      c.innerHTML = '<div class="empty-state"><p>No subjects for this grade.</p></div>'; 
+      return; 
+    }
+    
     c.innerHTML = `
       <div class="card">
         <div class="card-header">
           <div><div class="card-title">Attendance Register — Grade ${grade}</div><div class="card-subtitle">${today}</div></div>
           <div class="flex-gap">
-            <select class="form-control" id="attSubjSel">
+            <select class="form-control" id="attSubjSel" onchange="updateAttendanceTable()">
               ${subjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}
+            </select>
+            <select class="form-control" id="attGradeSel" onchange="updateAttendanceGrade()">
+              ${teacherGrades.map(g => `<option value="${g}" ${g === grade ? 'selected' : ''}>Grade ${g}</option>`).join('')}
             </select>
             <button class="btn btn-primary btn-sm" onclick="saveAttendance()"><i class="fas fa-save"></i> Save</button>
           </div>
         </div>
-        <div class="card-body" style="padding:0">
-          <table>
-            <thead><tr><th>Learner</th><th>Present</th><th>Absent</th><th>Late</th><th>Current</th></tr></thead>
-            <tbody id="attBody"></tbody>
-          </table>
+        
+        <div id="attStatsSection" style="padding: 1rem 1.25rem; background: var(--surface); border-bottom: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div style="font-weight: 700; font-size: 0.8rem; color: var(--ink-2);">
+              <i class="fas fa-chart-pie"></i> Today's Attendance Summary
+            </div>
+            <div id="attStats" style="display: flex; gap: 1.5rem; flex-wrap: wrap;"></div>
+          </div>
         </div>
-        <div id="attSaveMsg" style="display:none; color:var(--green); font-size:0.78rem; padding:0.75rem 1.25rem; font-weight:600"><i class="fas fa-check-circle"></i> Attendance saved.</div>
+        
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table style="width:100%">
+              <thead>
+                <tr>
+                  <th>Learner</th>
+                  <th>Present</th>
+                  <th>Absent</th>
+                  <th>Late</th>
+                  <th>Current</th>
+                </tr>
+              </thead>
+              <tbody id="attBody"></tbody>
+            <table>
+          </div>
+        </div>
+        <div id="attSaveMsg" style="display:none; color:var(--green); font-size:0.78rem; padding:0.75rem 1.25rem; font-weight:600">
+          <i class="fas fa-check-circle"></i> Attendance saved.
+        </div>
       </div>`;
     buildAttendanceTable(today);
   } else if (activeTab === 'resources') {
     c.innerHTML = `
       <div class="card">
-        <div class="card-header"><div class="card-title">School-based Resources</div></div>
+        <div class="card-header">
+          <div class="card-title">Resource Desk</div>
+          <div class="card-subtitle">Available support resources for your teaching</div>
+        </div>
         <div class="card-body">
           ${DB.resources.filter(r => r.active).map(r => `
-            <div class="intv-card">
-              <div class="intv-card-header">
-                <div style="font-weight:700; font-size:0.83rem">${esc(r.title)}</div>
-                <span class="badge ${r.type==='school-based'?'badge-blue':'badge-teal'}">${r.type}</span>
+            <div class="resource-card">
+              <div style="flex:1">
+                <div style="font-weight:700; font-size:0.85rem; margin-bottom:3px">${esc(r.title)}</div>
+                <div class="text-muted">${esc(r.description)}</div>
+                <div style="margin-top:5px">
+                  <span class="badge ${r.type==='school-based'?'badge-blue':'badge-teal'}">${r.type}</span>
+                </div>
               </div>
-              <div class="intv-card-body">${esc(r.description)}</div>
-            </div>`).join('')}
+            </div>
+          `).join('')}
+          ${DB.resources.filter(r => r.active).length === 0 ? '<div class="empty-state"><p>No active resources available.</p></div>' : ''}
         </div>
       </div>`;
   }
@@ -1732,12 +2591,38 @@ function onMarkSubjectChange() {
   const assessments = getAssessmentsBySubject(teacherState.subjectId);
   if (assessments.length) teacherState.assessmentId = assessments[0].id;
   const assSel = $('markAssessSel');
-  if (assSel) assSel.innerHTML = assessments.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  if (assSel) assSel.innerHTML = assessments.map(a => `<option value="${a.id}">${esc(a.name)} (T${a.term})</option>`).join('');
   buildMarkTable();
 }
 
 function onMarkAssessChange() {
   teacherState.assessmentId = parseInt($('markAssessSel').value);
+  buildMarkTable();
+}
+
+function onMarkGradeChange() {
+  const grade = parseInt($('markGradeSel').value);
+  teacherState.gradeFilter = grade;
+  
+  // Reset subject and assessment selections
+  const teacherSubjects = getTeacherSubjectsForGrade(grade);
+  if (teacherSubjects.length > 0) {
+    teacherState.subjectId = teacherSubjects[0].id;
+    const subjectSelect = $('markSubjectSel');
+    if (subjectSelect) {
+      subjectSelect.innerHTML = teacherSubjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    }
+    
+    const assessments = getAssessmentsBySubject(teacherState.subjectId);
+    if (assessments.length > 0) {
+      teacherState.assessmentId = assessments[0].id;
+      const assessSelect = $('markAssessSel');
+      if (assessSelect) {
+        assessSelect.innerHTML = assessments.map(a => `<option value="${a.id}">${esc(a.name)} (T${a.term})</option>`).join('');
+      }
+    }
+  }
+  
   buildMarkTable();
 }
 
@@ -1771,7 +2656,7 @@ function buildMarkTable() {
     }).join('');
     const pct = possible > 0 ? (total / possible * 100) : 0;
     return `<tr>
-      <td><div style="font-weight:600">${esc(s.name)}</div></td>
+      <td><div style="font-weight:600">${esc(s.name)}</div><div class="text-muted">Grade ${s.grade}</div></td>
       ${cells}
       <td><span class="mark-total" id="mktot_${s.id}_${teacherState.assessmentId}">${total}</span></td>
       <td><span style="font-size:0.8rem; font-weight:700; color:${progColor(pct)}" id="mkpct_${s.id}_${teacherState.assessmentId}">${Math.round(pct)}%</span></td>
@@ -1804,15 +2689,63 @@ function onMarkInput(studentId, assessmentId, questionId, input) {
 function saveMarks() {
   const questions = getQuestionsByAssessment(teacherState.assessmentId);
   const learners = getLearners(currentUser.schoolId, teacherState.gradeFilter);
+  
+  // Save all marks
   learners.forEach(s => {
     questions.forEach(q => {
       const inp = $(`mk_${s.id}_${teacherState.assessmentId}_${q.id}`);
       if (inp) setMark(s.id, teacherState.assessmentId, q.id, parseInt(inp.value) || 0);
     });
   });
+  
+  // Show success message
   const msg = $('markSaveMsg');
-  if (msg) { msg.style.display = ''; setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000); }
-  if (activeTab === 'risk') { buildRiskGrid(); buildMyInterventions(); }
+  if (msg) { 
+    msg.style.display = ''; 
+    setTimeout(() => { 
+      if (msg) msg.style.display = 'none'; 
+    }, 3000); 
+  }
+  
+  // CRITICAL FIX: Update risk displays if we're on risk tab
+  if (activeTab === 'risk') {
+    // Re-render the risk tab with updated calculations
+    const c = $('pageContent');
+    renderTeacher(c);
+  }
+  
+  // Also update any other components that might show risk data
+  // For dashboard, update the stats if needed
+  if (activeTab === 'dashboard') {
+    const dashboardStats = document.querySelectorAll('.stat-tile-val');
+    if (dashboardStats.length) {
+      // Refresh dashboard if visible
+      const c = $('pageContent');
+      renderTeacher(c);
+    }
+  }
+  
+  // Trigger a custom event that other parts of the app can listen to
+  document.dispatchEvent(new CustomEvent('marksUpdated', { 
+    detail: { 
+      subjectId: teacherState.subjectId, 
+      assessmentId: teacherState.assessmentId,
+      grade: teacherState.gradeFilter 
+    } 
+  }));
+}
+
+function refreshRiskAnalysis() {
+  // Recalculate all risk data
+  const c = $('pageContent');
+  renderTeacher(c);
+  
+  // Show a temporary notification
+  const msg = document.createElement('div');
+  msg.textContent = '✓ Risk data refreshed';
+  msg.style.cssText = 'position:fixed; bottom:20px; right:20px; background:var(--green); color:white; padding:8px 16px; border-radius:8px; z-index:1000; font-size:0.8rem;';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 2000);
 }
 
 function buildRiskGrid() {
@@ -1950,28 +2883,223 @@ function submitIntervention(learnerId) {
   }
 }
 
-function buildAttendanceTable(today) {
-  const subjectId = parseInt($('attSubjSel')?.value || currentUser.subjects[0]);
-  if (!DB.attendance[today]) DB.attendance[today] = {};
-  if (!DB.attendance[today][subjectId]) DB.attendance[today][subjectId] = {};
-  const records = DB.attendance[today][subjectId];
+function buildAttendanceTable(date) {
+  const subjectId = parseInt($('attSubjSel')?.value);
+  if (!subjectId) return;
+  
+  if (!DB.attendance[date]) DB.attendance[date] = {};
+  if (!DB.attendance[date][subjectId]) DB.attendance[date][subjectId] = {};
+  const records = DB.attendance[date][subjectId];
   const learners = getLearners(currentUser.schoolId, teacherState.gradeFilter);
-  $('attBody').innerHTML = learners.map(l => {
-    const status = records[l.id] || 'present';
+  
+  const tbody = document.getElementById('attBody');
+  if (!tbody) return;
+  
+  tbody.innerHTML = learners.map(l => {
+    const status = records[l.id] || null;
+    
+    // Check which status is active
+    const isPresent = status === 'present';
+    const isAbsent = status === 'absent';
+    const isLate = status === 'late';
+    
     return `<tr>
-      <td><div style="font-weight:600">${esc(l.name)}</div><div class="text-muted">Grade ${l.grade}</div></td>
-      <td><button class="att-status-btn att-present ${status==='present'?'active':''}" onclick="setAttendance(${l.id},'present',${subjectId},'${today}')">Present</button></td>
-      <td><button class="att-status-btn att-absent ${status==='absent'?'active':''}" onclick="setAttendance(${l.id},'absent',${subjectId},'${today}')">Absent</button></td>
-      <td><button class="att-status-btn att-late ${status==='late'?'active':''}" onclick="setAttendance(${l.id},'late',${subjectId},'${today}')">Late</button></td>
-      <td><span class="badge ${status==='present'?'badge-green':status==='absent'?'badge-red':'badge-amber'}">${status}</span></td>
-    </tr>`;
+      <td>
+        <div style="font-weight:600">${esc(l.name)}</div>
+        <div class="text-muted">Grade ${l.grade}</div>
+      </td>
+      <td>
+        <button 
+          class="att-status-btn att-present ${isPresent ? 'active' : ''}" 
+          onclick="setAttendance(${l.id},'present',${subjectId},'${date}')"
+        >
+          Present
+        </button>
+      </td>
+      <td>
+        <button 
+          class="att-status-btn att-absent ${isAbsent ? 'active' : ''}" 
+          onclick="setAttendance(${l.id},'absent',${subjectId},'${date}')"
+        >
+          Absent
+        </button>
+      </td>
+      <td>
+        <button 
+          class="att-status-btn att-late ${isLate ? 'active' : ''}" 
+          onclick="setAttendance(${l.id},'late',${subjectId},'${date}')"
+        >
+          Late
+        </button>
+      </td>
+      <td>
+        <span class="badge ${isPresent ? 'badge-green' : isAbsent ? 'badge-red' : isLate ? 'badge-amber' : 'badge-gray'}">
+          ${status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Not Marked'}
+        </span>
+      </td>
+    </table>`;
   }).join('');
+  
+  // Update statistics after rebuilding the table
+  updateAttendanceStats();
+}
+
+function updateAttendanceStats() {
+    const today = new Date().toISOString().split('T')[0];
+    const subjectId = parseInt($('attSubjSel')?.value);
+    if (!subjectId) return;
+    
+    // Get attendance records for today and this subject
+    const records = DB.attendance[today]?.[subjectId] || {};
+    const learners = getLearners(currentUser.schoolId, teacherState.gradeFilter);
+    
+    // Count statistics
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let notMarked = 0;
+    
+    learners.forEach(learner => {
+        const status = records[learner.id];
+        if (status === 'present') present++;
+        else if (status === 'absent') absent++;
+        else if (status === 'late') late++;
+        else notMarked++;
+    });
+    
+    const total = learners.length;
+    const presentPercent = total > 0 ? (present / total) * 100 : 0;
+    const absentPercent = total > 0 ? (absent / total) * 100 : 0;
+    const latePercent = total > 0 ? (late / total) * 100 : 0;
+    
+    // Update the stats display
+    const statsContainer = document.getElementById('attStats');
+    if (statsContainer) {
+        statsContainer.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 12px; height: 12px; background: var(--green); border-radius: 3px;"></div>
+                <span style="font-size: 0.75rem;">Present: <strong style="color: var(--green);">${present}</strong> (${presentPercent.toFixed(1)}%)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 12px; height: 12px; background: var(--red); border-radius: 3px;"></div>
+                <span style="font-size: 0.75rem;">Absent: <strong style="color: var(--red);">${absent}</strong> (${absentPercent.toFixed(1)}%)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 12px; height: 12px; background: var(--amber); border-radius: 3px;"></div>
+                <span style="font-size: 0.75rem;">Late: <strong style="color: var(--amber);">${late}</strong> (${latePercent.toFixed(1)}%)</span>
+            </div>
+            ${notMarked > 0 ? `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 12px; height: 12px; background: var(--ink-4); border-radius: 3px;"></div>
+                <span style="font-size: 0.75rem;">Not Marked: <strong>${notMarked}</strong></span>
+            </div>
+            ` : ''}
+        `;
+    }
+}
+
+// Update attendance when grade changes
+function updateAttendanceGrade() {
+  const grade = parseInt($('attGradeSel').value);
+  teacherState.gradeFilter = grade;
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Get subjects for the new grade
+  const subjects = getTeacherSubjectsForGrade(grade);
+  const subjectSelect = $('attSubjSel');
+  
+  if (subjects.length > 0) {
+    // Re-populate subject dropdown
+    subjectSelect.innerHTML = subjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    // Refresh the table
+    buildAttendanceTable(today);
+  } else {
+    // No subjects for this grade
+    const tbody = document.getElementById('attBody');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No subjects available for this grade</td></tr>';
+    }
+  }
+}
+
+// Update attendance when subject changes
+function updateAttendanceTable() {
+  const today = new Date().toISOString().split('T')[0];
+  buildAttendanceTable(today);
+}
+
+// Update the existing updateAttendanceStats function
+function updateAttendanceStats() {
+    const today = new Date().toISOString().split('T')[0];
+    const subjectId = parseInt($('attSubjSel')?.value);
+    const grade = parseInt($('attGradeSel')?.value) || teacherState.gradeFilter;
+    
+    if (!subjectId) return;
+    
+    // Get attendance records for today and this subject
+    const records = DB.attendance[today]?.[subjectId] || {};
+    const learners = getLearners(currentUser.schoolId, grade);
+    
+    // Count statistics
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let notMarked = 0;
+    
+    learners.forEach(learner => {
+        const status = records[learner.id];
+        if (status === 'present') present++;
+        else if (status === 'absent') absent++;
+        else if (status === 'late') late++;
+        else notMarked++;
+    });
+    
+    const total = learners.length;
+    const presentPercent = total > 0 ? (present / total) * 100 : 0;
+    const absentPercent = total > 0 ? (absent / total) * 100 : 0;
+    const latePercent = total > 0 ? (late / total) * 100 : 0;
+    
+    // Update the stats display
+    const statsContainer = document.getElementById('attStats');
+    if (statsContainer) {
+        statsContainer.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 12px; height: 12px; background: var(--green); border-radius: 3px;"></div>
+                <span style="font-size: 0.75rem;">Present: <strong style="color: var(--green);">${present}</strong> (${presentPercent.toFixed(1)}%)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 12px; height: 12px; background: var(--red); border-radius: 3px;"></div>
+                <span style="font-size: 0.75rem;">Absent: <strong style="color: var(--red);">${absent}</strong> (${absentPercent.toFixed(1)}%)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 12px; height: 12px; background: var(--amber); border-radius: 3px;"></div>
+                <span style="font-size: 0.75rem;">Late: <strong style="color: var(--amber);">${late}</strong> (${latePercent.toFixed(1)}%)</span>
+            </div>
+            ${notMarked > 0 ? `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 12px; height: 12px; background: var(--ink-4); border-radius: 3px;"></div>
+                <span style="font-size: 0.75rem;">Not Marked: <strong>${notMarked}</strong></span>
+            </div>
+            ` : ''}
+        `;
+    }
 }
 
 function setAttendance(studentId, status, subjectId, date) {
   if (!DB.attendance[date]) DB.attendance[date] = {};
   if (!DB.attendance[date][subjectId]) DB.attendance[date][subjectId] = {};
-  DB.attendance[date][subjectId][studentId] = status;
+  
+  // Toggle logic: if clicking the same status, unselect it
+  const currentStatus = DB.attendance[date][subjectId][studentId];
+  if (currentStatus === status) {
+    // Unselect - remove the attendance record
+    delete DB.attendance[date][subjectId][studentId];
+  } else {
+    // Set new status
+    DB.attendance[date][subjectId][studentId] = status;
+  }
+  
+  // Refresh the attendance table
   buildAttendanceTable(date);
 }
 
@@ -1986,6 +3114,10 @@ function saveAttendance() {
 function renderLearner(c) {
   const uid = currentUser.id;
   const mySubjects = DB.subjects.filter(s => currentUser.subjects.includes(s.id));
+  
+  // Get or initialize learner's subject filter state
+  if (!learnerSubjectFilter) var learnerSubjectFilter = null;
+  if (typeof window.learnerSubjectFilter === 'undefined') window.learnerSubjectFilter = null;
 
   if (activeTab === 'dashboard') {
     const overall = calcOverallAverage(uid);
@@ -2014,9 +3146,57 @@ function renderLearner(c) {
         }).join('')}
       </div>`;
   } else if (activeTab === 'performance') {
-    c.innerHTML = `<div id="learnerPerfContent"></div>`;
+    // Get the selected subject filter (default to null = all subjects)
+    const selectedSubjectId = window.learnerSubjectFilter;
+    
+    // Filter subjects based on selection
+    let displaySubjects = mySubjects;
+    if (selectedSubjectId) {
+      displaySubjects = mySubjects.filter(s => s.id === selectedSubjectId);
+    }
+    
+    c.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">My Performance</div>
+          <div class="card-subtitle">Track your academic progress across all subjects</div>
+        </div>
+        <div class="card-body">
+          <!-- Subject Filter -->
+          <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--surface); border-radius: var(--radius);">
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+              <div style="font-weight: 600; font-size: 0.8rem; color: var(--ink-2);">
+                <i class="fas fa-filter"></i> Filter by Subject:
+              </div>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="grade-tab ${!selectedSubjectId ? 'active' : ''}" onclick="setLearnerSubjectFilter(null)">
+                  All Subjects
+                </button>
+                ${mySubjects.map(s => `
+                  <button class="grade-tab ${selectedSubjectId === s.id ? 'active' : ''}" onclick="setLearnerSubjectFilter(${s.id})">
+                    ${esc(s.name)}
+                  </button>
+                `).join('')}
+              </div>
+              ${selectedSubjectId ? `
+                <div class="text-muted" style="font-size: 0.7rem; margin-left: auto;">
+                  <i class="fas fa-chart-line"></i> Showing details for ${esc(displaySubjects[0]?.name)}
+                </div>
+              ` : `
+                <div class="text-muted" style="font-size: 0.7rem; margin-left: auto;">
+                  <i class="fas fa-chart-line"></i> Showing all ${mySubjects.length} subjects
+                </div>
+              `}
+            </div>
+          </div>
+          
+          <div id="learnerPerfContent"></div>
+        </div>
+      </div>`;
+    
+    // Build the performance content for filtered subjects
     let html = '';
-    mySubjects.forEach(sub => {
+    displaySubjects.forEach(sub => {
       const assessments = getAssessmentsBySubject(sub.id);
       if (!assessments.length) return;
       const subAvg = calcSubjectAverage(uid, sub.id);
@@ -2034,13 +3214,16 @@ function renderLearner(c) {
         topic,
         avg: data.total / data.count
       }));
-      html += `<div class="card">
+      
+      html += `<div class="card" style="margin-bottom: 1.25rem;">
         <div class="card-header">
           <div><div class="card-title">${esc(sub.name)}</div><div class="card-subtitle">Grade ${sub.grade}</div></div>
           <div style="text-align:right"><span style="font-size:1.2rem; font-weight:700; color:${progColor(subAvg)}">${Math.round(subAvg)}%</span><br>${riskBadge(subAvg)}</div>
         </div>
         <div class="card-body">
-          <button class="btn btn-sm btn-secondary" style="margin-bottom:1rem" onclick="this.nextElementSibling.classList.toggle('open')"><i class="fas fa-chart-pie"></i> Topic Breakdown</button>
+          <button class="btn btn-sm btn-secondary" style="margin-bottom:1rem" onclick="this.nextElementSibling.classList.toggle('open')">
+            <i class="fas fa-chart-pie"></i> Topic Breakdown
+          </button>
           <div class="tree-children" style="border-left-color:var(--blue-mid); margin-bottom:1rem">
             ${topicList.length ? topicList.map(t => `
               <div style="margin-bottom:0.4rem; display:flex; align-items:center; gap:8px">
@@ -2074,7 +3257,13 @@ function renderLearner(c) {
         </div>
       </div>`;
     });
+    
+    if (displaySubjects.length === 0) {
+      html = '<div class="empty-state"><i class="fas fa-book-open"></i><p>No subjects available for the selected filter.</p></div>';
+    }
+    
     $('learnerPerfContent').innerHTML = html;
+    
   } else if (activeTab === 'resources') {
     const approved = DB.interventions.filter(i => i.learnerId === uid && i.status === 'active');
     c.innerHTML = `<div class="card">
@@ -2120,6 +3309,11 @@ function renderLearner(c) {
       </div>
     </div>`;
   }
+}
+
+function setLearnerSubjectFilter(subjectId) {
+  window.learnerSubjectFilter = subjectId;
+  navigateTo('performance');
 }
 
 // ══════════════════════════════════════════════════════
@@ -2192,7 +3386,6 @@ function teacherRowAdmin(u) {
 }
 
 function learnerRowAdmin(u) {
-  const avg = calcOverallAverage(u.id);
   return `<div class="directory-row" style="justify-content:space-between; flex-wrap:wrap; gap:6px">
     <div class="flex-gap">
       <div class="dir-avatar" style="background:var(--green)">${avatarChar(u.name)}</div>
@@ -2202,14 +3395,236 @@ function learnerRowAdmin(u) {
       </div>
     </div>
     <div class="flex-gap">
-      ${avg >= 75 ? '<span class="badge badge-star"><i class="fas fa-star"></i></span>' : ''}
-      ${riskBadge(avg)}
+      <span class="badge badge-gray">Grade ${u.grade}</span>
       <button class="btn btn-xs btn-secondary" onclick="openEditUserModal(${u.id})"><i class="fas fa-edit"></i></button>
       <button class="btn btn-xs btn-amber" onclick="resetUserPassword(${u.id})"><i class="fas fa-key"></i> Reset</button>
       <button class="btn btn-xs ${u.status==='active'?'btn-danger':'btn-success'}" onclick="toggleUserStatus(${u.id})">${u.status==='active'?'Deactivate':'Activate'}</button>
     </div>
   </div>`;
 }
+
+function openEditAssessmentModal(assId) {
+  const ass = DB.assessments.find(a => a.id === assId);
+  if (!ass) {
+    alert('Assessment not found');
+    return;
+  }
+  const subjects = DB.subjects.filter(s => s.schoolId === currentUser.schoolId);
+  const qs = getQuestionsByAssessment(assId);
+  
+  openModal(`
+    <div class="modal-title">Edit Assessment</div>
+    <div class="modal-field"><label>Subject</label>
+      <select id="m_editAssessSubject" class="form-control">
+        ${subjects.map(s => `<option value="${s.id}" ${s.id === ass.subjectId ? 'selected' : ''}>${esc(s.name)} (G${s.grade})</option>`).join('')}
+      </select>
+    </div>
+    <div class="modal-field"><label>Name</label>
+      <input type="text" id="m_editAssessName" class="form-control" value="${esc(ass.name)}">
+    </div>
+    <div class="modal-field"><label>Term</label>
+      <select id="m_editAssessTerm" class="form-control">
+        ${[1,2,3,4].map(t => `<option value="${t}" ${ass.term === t ? 'selected' : ''}>${t}</option>`).join('')}
+      </select>
+    </div>
+    <div class="modal-field"><label>Total Marks</label>
+      <input type="number" id="m_editAssessMarks" class="form-control" value="${ass.totalMarks}" min="1" onchange="updateEditQuestionsTotal()">
+    </div>
+    <div class="modal-field"><label>Weight (%)</label>
+      <input type="number" id="m_editAssessWeight" class="form-control" value="${ass.weight}" min="1" max="100">
+    </div>
+    <div class="modal-field"><label>Type</label>
+      <select id="m_editAssessType" class="form-control">
+        ${['Test','Exam','Assignment'].map(t => `<option value="${t}" ${ass.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+      </select>
+    </div>
+    
+    <hr class="divider">
+    <div style="font-weight:700; font-size:0.8rem; margin-bottom:0.5rem; display: flex; justify-content: space-between; align-items: center;">
+      <span>Questions</span>
+      <span id="editQuestionsTotalDisplay" style="font-size:0.7rem;">Total: ${qs.reduce((sum, q) => sum + q.marks, 0)} / ${ass.totalMarks} marks</span>
+    </div>
+    <div id="editQuestionsContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--surface);">
+      ${qs.map((q, idx) => `
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap: wrap;">
+          <input type="text" value="${esc(q.name)}" style="width: 60px;" placeholder="Q${idx+1}" class="form-control editQName">
+          <input type="number" value="${q.marks}" style="width: 80px;" placeholder="Marks" class="form-control editQMarks" min="1" onchange="updateEditQuestionsTotal()" onkeyup="updateEditQuestionsTotal()">
+          <input type="text" value="${esc(q.topic)}" style="width: 150px;" placeholder="Topic" class="form-control editQTopic">
+          <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove(); updateEditQuestionsTotal(); renumberEditQuestions()">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `).join('')}
+    </div>
+    ${qs.length === 0 ? '<div class="text-muted" style="margin-bottom: 8px;"><i class="fas fa-info-circle"></i> No questions added yet</div>' : ''}
+    <button class="btn btn-sm btn-secondary" style="margin-top: 8px;" onclick="addEditQuestionRow()">
+      <i class="fas fa-plus"></i> Add Question
+    </button>
+    <div id="editQuestionsWarning" style="display:none; margin-top:8px; padding:8px; background:var(--red-light); border-radius:6px; font-size:0.7rem; color:var(--red);">
+      <i class="fas fa-exclamation-triangle"></i> Question marks total does not match assessment total marks
+    </div>
+    
+    <div class="modal-footer" style="margin-top: 16px;">
+      <button class="btn btn-danger" onclick="deleteAssessment(${assId}); closeModal()">Delete Assessment</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAssessmentEdit(${assId})">Save Changes</button>
+    </div>
+  `);
+  
+  // Update the total display after modal is open
+  setTimeout(() => {
+    updateEditQuestionsTotal();
+  }, 100);
+}
+
+function updateEditQuestionsTotal() {
+  const container = document.getElementById('editQuestionsContainer');
+  if (!container) return;
+  
+  const rows = container.querySelectorAll('div');
+  let total = 0;
+  rows.forEach(row => {
+    const marksInput = row.querySelector('.editQMarks');
+    if (marksInput) {
+      const marks = parseInt(marksInput.value) || 0;
+      total += marks;
+    }
+  });
+  const assessmentTotal = document.getElementById('m_editAssessMarks') ? parseInt(document.getElementById('m_editAssessMarks').value) || 0 : 0;
+  const display = document.getElementById('editQuestionsTotalDisplay');
+  const warning = document.getElementById('editQuestionsWarning');
+  
+  if (display) {
+    display.textContent = `Total: ${total} / ${assessmentTotal} marks`;
+    display.style.color = total === assessmentTotal ? 'var(--green)' : 'var(--red)';
+    if (warning) {
+      warning.style.display = (total !== assessmentTotal && rows.length > 0) ? 'block' : 'none';
+    }
+  }
+}
+
+function addEditQuestionRow() {
+  const container = document.getElementById('editQuestionsContainer');
+  if (!container) return;
+  
+  const existingRows = container.querySelectorAll('div');
+  const nextNumber = existingRows.length + 1;
+  
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap: wrap;';
+  row.innerHTML = `
+    <input type="text" value="Q${nextNumber}" style="width: 60px;" class="form-control editQName">
+    <input type="number" placeholder="Marks" style="width: 80px;" class="form-control editQMarks" min="1" onchange="updateEditQuestionsTotal()" onkeyup="updateEditQuestionsTotal()">
+    <input type="text" placeholder="Topic" style="width: 150px;" class="form-control editQTopic">
+    <button class="btn btn-xs btn-danger" onclick="this.parentElement.remove(); updateEditQuestionsTotal(); renumberEditQuestions()">
+      <i class="fas fa-trash"></i>
+    </button>
+  `;
+  container.appendChild(row);
+  updateEditQuestionsTotal();
+}
+
+function renumberEditQuestions() {
+  const container = document.getElementById('editQuestionsContainer');
+  if (!container) return;
+  const rows = container.querySelectorAll('div');
+  rows.forEach((row, index) => {
+    const nameInput = row.querySelector('.editQName');
+    if (nameInput && (nameInput.value === '' || nameInput.value.startsWith('Q'))) {
+      nameInput.value = `Q${index + 1}`;
+    }
+  });
+  updateEditQuestionsTotal();
+}
+
+function saveAssessmentEdit(assId) {
+  const ass = DB.assessments.find(a => a.id === assId);
+  if (!ass) {
+    alert('Assessment not found');
+    closeModal();
+    return;
+  }
+  
+  const newSubjectId = parseInt(document.getElementById('m_editAssessSubject').value);
+  const newName = document.getElementById('m_editAssessName').value.trim();
+  const newTerm = parseInt(document.getElementById('m_editAssessTerm').value);
+  const newTotalMarks = parseInt(document.getElementById('m_editAssessMarks').value);
+  const newWeight = parseInt(document.getElementById('m_editAssessWeight').value);
+  const newType = document.getElementById('m_editAssessType').value;
+  
+  if (!newName) {
+    alert('Assessment name is required');
+    return;
+  }
+  
+  // Collect questions from edit modal
+  const container = document.getElementById('editQuestionsContainer');
+  const questions = [];
+  let questionsTotalMarks = 0;
+  
+  if (container) {
+    const rows = container.querySelectorAll('div');
+    for (let row of rows) {
+      const name = row.querySelector('.editQName')?.value.trim();
+      const marks = parseInt(row.querySelector('.editQMarks')?.value) || 0;
+      const topic = row.querySelector('.editQTopic')?.value.trim() || 'General';
+      if (name) {
+        questions.push({ name, marks, topic });
+        questionsTotalMarks += marks;
+      }
+    }
+  }
+  
+  // Validation
+  if (questions.length === 0) {
+    alert('Please add at least one question to the assessment.');
+    return;
+  }
+  
+  if (questionsTotalMarks !== newTotalMarks) {
+    alert(`❌ Question marks total (${questionsTotalMarks}) does NOT equal assessment total marks (${newTotalMarks}).\n\nPlease adjust your question marks or assessment total marks.`);
+    return;
+  }
+  
+  // Update assessment
+  ass.subjectId = newSubjectId;
+  ass.name = newName;
+  ass.term = newTerm;
+  ass.totalMarks = newTotalMarks;
+  ass.weight = newWeight;
+  ass.type = newType;
+  
+  // Update questions
+  DB.questions = DB.questions.filter(q => q.assessmentId !== assId);
+  questions.forEach(q => {
+    DB.questions.push({ 
+      id: newId(), 
+      assessmentId: assId, 
+      name: q.name, 
+      marks: q.marks, 
+      topic: q.topic 
+    });
+  });
+  
+  closeModal();
+  
+  // Refresh the current view
+  if (activeTab === 'assessments') {
+    renderAssessmentsList();
+  } else if (activeTab === 'subjects') {
+    refreshSubjectTree();
+  } else {
+    navigateTo('assessments');
+  }
+  
+  // Show success message
+  const msg = document.createElement('div');
+  msg.textContent = `✓ Assessment "${newName}" updated with ${questions.length} questions (${questionsTotalMarks}/${newTotalMarks} marks)`;
+  msg.style.cssText = 'position:fixed; bottom:20px; right:20px; background:var(--green); color:white; padding:8px 16px; border-radius:8px; z-index:1000; font-size:0.8rem;';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
+}
+
 
 // ══════════════════════════════════════════════════════
 // SORTING
@@ -2260,6 +3675,10 @@ function closeModalIfOutside(e) { if (e.target === $('modalOverlay')) closeModal
 // ══════════════════════════════════════════════════════
 // EXPOSED GLOBALS
 // ══════════════════════════════════════════════════════
+window.refreshRiskAnalysis = refreshRiskAnalysis;
+window.updateAttendanceGrade = updateAttendanceGrade;
+window.updateAttendanceTable = updateAttendanceTable;
+window.updateAttendanceStats = updateAttendanceStats;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.toggleNotifPanel = toggleNotifPanel;
@@ -2276,6 +3695,11 @@ window.openEditUserModal = openEditUserModal;
 window.saveUserEdit = saveUserEdit;
 window.resetUserPassword = resetUserPassword;
 window.openAddUserModal = openAddUserModal;
+window.openEditAssessmentModal = openEditAssessmentModal;
+window.saveAssessmentEdit = saveAssessmentEdit;
+window.updateEditQuestionsTotal = updateEditQuestionsTotal;
+window.addEditQuestionRow = addEditQuestionRow;
+window.renumberEditQuestions = renumberEditQuestions;
 window.addUser = addUser;
 window.openAddSubjectModal = openAddSubjectModal;
 window.addSubject = addSubject;
@@ -2286,6 +3710,8 @@ window.openAddResourceModal = openAddResourceModal;
 window.addResource = addResource;
 window.openAddAssessmentModal = openAddAssessmentModal;
 window.addAssessment = addAssessment;
+window.toggleTreeChildren = toggleTreeChildren;
+window.refreshSubjectTree = refreshSubjectTree;
 window.openEditAssessmentModal = openEditAssessmentModal;
 window.saveAssessmentEdit = saveAssessmentEdit;
 window.deleteAssessment = deleteAssessment;
@@ -2307,3 +3733,18 @@ window.openProfileEdit = openProfileEdit;
 window.saveProfileEdit = saveProfileEdit;
 window.openPasswordChange = openPasswordChange;
 window.savePasswordChange = savePasswordChange;
+window.setLearnerSubjectFilter = setLearnerSubjectFilter;
+window.onMarkGradeChange = onMarkGradeChange;
+window.applyAnalyticsFilters = applyAnalyticsFilters;
+window.clearAnalyticsFilters = clearAnalyticsFilters;
+window.sortAnalyticsTable = sortAnalyticsTable;
+window.applyAnalyticsSearch = applyAnalyticsSearch;
+window.clearAnalyticsSearch = clearAnalyticsSearch;
+window.applyAnalyticsFilters = applyAnalyticsFilters;
+window.clearAnalyticsFilters = clearAnalyticsFilters;
+window.sortAnalyticsTable = sortAnalyticsTable;
+window.updateQuestionsTotal = updateQuestionsTotal;
+window.renumberQuestions = renumberQuestions;
+window.renumberEditQuestions = renumberEditQuestions;
+window.updateEditQuestionsTotal = updateEditQuestionsTotal;
+window.addEditQuestionRow = addEditQuestionRow;
