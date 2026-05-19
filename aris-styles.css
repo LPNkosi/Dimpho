@@ -7,6 +7,7 @@
   --ink-4: #8fa3b5;
   --surface: #f4f6f9;
   --surface-2: #edf0f4;
+  --sidebar-bg: #1a69c4fe;
   --white: #ffffff;
   --border: #dde3ea;
   --border-2: #c8d1db;
@@ -114,14 +115,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: va
 
 /* ─── SIDEBAR ─── */
 .sidebar {
-  width: var(--sidebar-w); background: var(--ink); flex-shrink: 0;
+  width: var(--sidebar-w); background: #011d52;
   display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0;
   z-index: 200; overflow: hidden;
 }
 .sidebar-brand {
-  padding: 1.25rem 1.25rem 1rem; display: flex; align-items: center; gap: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 1.25rem 1.25rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
 }
+
+
 .sidebar-logo {
   width: 36px; height: 36px; border-radius: 10px;
   background: linear-gradient(135deg, var(--blue), var(--teal));
